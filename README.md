@@ -194,7 +194,7 @@ cron:
 def can_control_experiments():
     # This default implementation will be fine for most
     return users.is_current_user_admin()
-<pre>
+</pre>
 
 <pre>
 # Customize current_logged_in_identity to make your a/b sessions
@@ -207,7 +207,7 @@ def can_control_experiments():
 #   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
 def current_logged_in_identity():
     return users.get_current_user().user_id() if users.get_current_user() else None
-<pre>
+</pre>
 
 If you want the most consistent A/B results for users who are anonymous and
 then proceed to login to your app, you should have this function return
