@@ -173,7 +173,6 @@ handlers:
 &ndash; url: /gae_bingo/.*
 &nbsp;&nbsp;script: gae_bingo/main.py
 </pre>
-
 ...and the following job definitions (found in `yaml/cron.yaml`) to your app's `cron.yaml`:
 <pre>
 cron:
@@ -185,7 +184,6 @@ cron:
 3. If you want, modify the contents of config.py to match your application's usage. There
    are two functions to modify: can_control_experiments() and
    current_logged_in_identity()
-
 <pre>
 # Customize can_see_experiments however you want to specify
 # whether or not the currently-logged-in user has access
@@ -194,8 +192,7 @@ cron:
 def can_control_experiments():
     # This default implementation will be fine for most
     return users.is_current_user_admin()
-</pre>
-
+</pre><br/>
 <pre>
 # Customize current_logged_in_identity to make your a/b sessions
 # stickier and more persistent per user.
@@ -205,14 +202,13 @@ def can_control_experiments():
 #   A) a db.Model that identifies the current user, something like models.UserData.current()
 #   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
 #   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
+#
 def current_logged_in_identity():
     return users.get_current_user().user_id() if users.get_current_user() else None
-</pre>
-
+</pre><br/>
 If you want the most consistent A/B results for users who are anonymous and
 then proceed to login to your app, you should have this function return
-a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class UserData(GAEBingoIdentityModel, db.Model):`
-
+a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class UserData(GAEBingoIdentityModel, db.Model):`<br/>
 ...GAE/Bingo will take care of the rest.
 
 4. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI middleware:
