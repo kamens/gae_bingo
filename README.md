@@ -8,7 +8,8 @@ GAE/Bingo](http://bjk5.com/coming-soon).
 GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 * <a href="#features">Features</a>  
-* <a href="#screens">Screenshots and Code Samples</a>  
+* <a href="#screens">Experiment Dashboard</a>
+* <a href="#usage">Usage and Code Samples</a>  
 * <a href="#principles">Design Principles</a>  
 * <a href="#start">Getting Started</a>  
 * <a href="#non-features">Non-features so far</a>  
@@ -33,9 +34,11 @@ Plus extra goodies:
   that take a long time like, say, [testing your software's effects on a student's education](http://www.khanacademy.org), that's no problem.
 * Performance optimized for App Engine
 
-## <a name="screens">Screenshots and Code Samples</a>
+## <a name="screens">Experiment Dashboard</a>
 
 <img src="http://i.imgur.com/x4Hew.png"/><br/><em>Your dashboard lets you control all experiments along with statistical analysis of the results.</em><br/><br/>
+
+## <a name="usage">Usage and Code Samples</a>
 
 ### Starting an experiment
 This line of code will automatically set up an A/B test named "new button
@@ -50,8 +53,6 @@ if ab_test("new button design"):
     return "new_button_class"
 else:
     return "old_button_class"
-
-...
 </pre>
 
 You can also specify an identifier for the conversion metric you're expecting
@@ -158,6 +159,41 @@ Just go read through [Patrick McKenzie's slides on A/B testing design principles
 
 ## <a name="start">Getting Started</a>
 
+1. Download this repository's source and copy the `gae_bingo/` folder into your App Engine project's root directory.
+
+2. Add the following handler definitions (found in `yaml/app.yaml`) to your app's `app.yaml`:
+<pre>
+handlers:
+&ndash; url: /gae_bingo/static
+&nbsp;&nbsp;static_dir: gae_bingo/static
+
+&ndash; url: /gae_bingo/tests/.*
+&nbsp;&nbsp;script: gae_bingo/tests/main.py
+
+&ndash; url: /gae_bingo/.*
+&nbsp;&nbsp;script: gae_bingo/main.py
+</pre>
+
+3. Add the following job definitions (found in `yaml/cron.yaml`) to your app's `cron.yaml`:
+<pre>
+cron:
+&ndash; description: persist gae bingo experiments to datastore
+&nbsp;&nbsp;url: /gae_bingo/persist
+&nbsp;&nbsp;schedule: every 5 minutes
+</pre>
+
+4. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI application:
+<pre>
+&#35; Example of existing application
+application = webapp.WSGIApplication(...existing application...)<br/>
+&#35; Add the following
+from gae_bingo.middleware import GAEBingoWSGIMiddleware
+application = GAEBingoWSGIMiddleware(application)
+</pre>
+
+5. You're all set! Start creating and converting A/B tests [as described
+   above](#usage)
+
 ## <a name="non-features">Non-features (well, some of them)</a>
 
 In order to get v1 out the door, a number of features were cut. Please feel
@@ -174,7 +210,7 @@ free to help us accomplish the following:
 
 ## <a name="bonus">Bonus</a>
 
-GAE/Bingo is currently in production use at Khan Academy (http://khanacademy.org). If you make good use of it elsewhere, be sure to let us know so we can brag about you to others (ben@khanacademy.org).
+GAE/Bingo is currently in production use at [Khan Academy](http://khanacademy.org). If you make good use of it elsewhere, be sure to let us know so we can brag about you to others (ben@khanacademy.org).
 
 ## <a name="faq">FAQ</a>
 
