@@ -106,7 +106,7 @@
                             <td class="title"><em>Alternative #{{ alternative.number }}</em></td>
                             <td>{{ alternative.content|escape }}</td>
                             <td>{{ alternative.participants }}</td>
-                            <td>{{ alternative.conversions }}</td>
+                            <td>{{ alternative.conversions }} ({{ alternative.pretty_conversion_rate }})</td>
                             <td>
                                 {% if results.0.live %}
 
