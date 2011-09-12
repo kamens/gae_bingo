@@ -36,7 +36,9 @@ Plus extra goodies:
 
 ## <a name="screens">Experiment Dashboard</a>
 
-<img src="http://i.imgur.com/x4Hew.png"/><br/><em>Your dashboard lets you control all experiments along with statistical analysis of the results.</em><br/><br/>
+<img src="http://i.imgur.com/x4Hew.png"/><br/>
+
+Your dashboard lets you control all experiments along with statistical analysis of the results.</em>
 
 ## <a name="usage">Usage and Code Samples</a>
 
@@ -165,16 +167,14 @@ Just go read through [Patrick McKenzie's slides on A/B testing design principles
 <pre>
 handlers:
 &ndash; url: /gae_bingo/static
-&nbsp;&nbsp;static_dir: gae_bingo/static
-
+&nbsp;&nbsp;static_dir: gae_bingo/static<br/>
 &ndash; url: /gae_bingo/tests/.*
-&nbsp;&nbsp;script: gae_bingo/tests/main.py
-
+&nbsp;&nbsp;script: gae_bingo/tests/main.py<br/>
 &ndash; url: /gae_bingo/.*
 &nbsp;&nbsp;script: gae_bingo/main.py
 </pre>
 
-3. Add the following job definitions (found in `yaml/cron.yaml`) to your app's `cron.yaml`:
+...and the following job definitions (found in `yaml/cron.yaml`) to your app's `cron.yaml`:
 <pre>
 cron:
 &ndash; description: persist gae bingo experiments to datastore
@@ -182,7 +182,40 @@ cron:
 &nbsp;&nbsp;schedule: every 5 minutes
 </pre>
 
-4. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI application:
+3. If you want, modify the contents of config.py to match your application's usage. There
+   are two functions to modify: can_control_experiments() and
+   current_logged_in_identity()
+
+<pre>
+# Customize can_see_experiments however you want to specify
+# whether or not the currently-logged-in user has access
+# to the experiment dashboard.
+#
+def can_control_experiments():
+    # This default implementation will be fine for most
+    return users.is_current_user_admin()
+<pre>
+
+<pre>
+# Customize current_logged_in_identity to make your a/b sessions
+# stickier and more persistent per user.
+#
+# This should return one of the following:
+#
+#   A) a db.Model that identifies the current user, something like models.UserData.current()
+#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
+#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
+def current_logged_in_identity():
+    return users.get_current_user().user_id() if users.get_current_user() else None
+<pre>
+
+If you want the most consistent A/B results for users who are anonymous and
+then proceed to login to your app, you should have this function return
+a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class UserData(GAEBingoIdentityModel, db.Model):`
+
+...GAE/Bingo will take care of the rest.
+
+4. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI middleware:
 <pre>
 &#35; Example of existing application
 application = webapp.WSGIApplication(...existing application...)<br/>
@@ -192,7 +225,7 @@ application = GAEBingoWSGIMiddleware(application)
 </pre>
 
 5. You're all set! Start creating and converting A/B tests [as described
-   above](#usage)
+   above](#usage).
 
 ## <a name="non-features">Non-features (well, some of them)</a>
 
@@ -237,3 +270,7 @@ GAE/Bingo is currently in production use at [Khan Academy](http://khanacademy.or
 4. Can I use this framework for my app/client/iguana website?
 
     It's all yours.
+
+5. Did you design the dashboard template?
+
+    Nope -- check out https://github.com/pilu/web-app-theme
