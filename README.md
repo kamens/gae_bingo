@@ -205,8 +205,8 @@ application = GAEBingoWSGIMiddleware(application)
 \# to the experiment dashboard.
 \#
 def can_control_experiments():
-&nbsp;&nbsp;\# This default implementation will be fine for most
-&nbsp;&nbsp;return users.is_current_user_admin()
+&nbsp;&nbsp;&nbsp;&nbsp;\# This default implementation will be fine for most
+&nbsp;&nbsp;&nbsp;&nbsp;return users.is_current_user_admin()
 </pre><br/>
 <pre>
 \# Customize current_logged_in_identity to make your a/b sessions
@@ -219,7 +219,7 @@ def can_control_experiments():
 \#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
 \#
 def current_logged_in_identity():
-&nbsp;&nbsp;return users.get_current_user().user_id() if users.get_current_user() else None
+&nbsp;&nbsp;&nbsp;&nbsp;return users.get_current_user().user_id() if users.get_current_user() else None
 </pre><br/>
 If you want the most consistent A/B results for users who are anonymous and
 then proceed to login to your app, you should have this function return
