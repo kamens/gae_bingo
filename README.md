@@ -187,7 +187,16 @@ cron:
 &nbsp;&nbsp;schedule: every 5 minutes
 </pre>
 
-3. If you want, modify the contents of config.py to match your application's usage. There
+3. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI middleware:
+<pre>
+&#35; Example of existing application
+application = webapp.WSGIApplication(...existing application...)<br/>
+&#35; Add the following
+from gae_bingo.middleware import GAEBingoWSGIMiddleware
+application = GAEBingoWSGIMiddleware(application)
+</pre>
+
+4. (Optional, suggested) If you want, modify the contents of config.py to match your application's usage. There
    are two functions to modify: can_control_experiments() and
    current_logged_in_identity()
 <pre>
@@ -216,15 +225,6 @@ If you want the most consistent A/B results for users who are anonymous and
 then proceed to login to your app, you should have this function return
 a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class UserData(GAEBingoIdentityModel, db.Model):`<br/>
 ...GAE/Bingo will take care of the rest.
-
-4. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI middleware:
-<pre>
-&#35; Example of existing application
-application = webapp.WSGIApplication(...existing application...)<br/>
-&#35; Add the following
-from gae_bingo.middleware import GAEBingoWSGIMiddleware
-application = GAEBingoWSGIMiddleware(application)
-</pre>
 
 5. You're all set! Start creating and converting A/B tests [as described
    above](#usage).
