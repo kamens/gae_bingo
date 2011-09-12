@@ -185,10 +185,10 @@ cron:
    are two functions to modify: can_control_experiments() and
    current_logged_in_identity()
 <pre>
-# Customize can_see_experiments however you want to specify
-# whether or not the currently-logged-in user has access
-# to the experiment dashboard.
-#
+# Customize can_see_experiments however you want to specify<br/>
+# whether or not the currently-logged-in user has access<br/>
+# to the experiment dashboard.<br/>
+#<br/>
 def can_control_experiments():
     # This default implementation will be fine for most
     return users.is_current_user_admin()
