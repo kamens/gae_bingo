@@ -38,7 +38,7 @@ Plus extra goodies:
 
 <img src="http://i.imgur.com/x4Hew.png"/><br/>
 
-Your dashboard lets you control all experiments along with statistical analysis of the results.</em>
+Your dashboard lets you control all experiments and provides statistical analysis of results.</em>
 
 ## <a name="usage">Usage and Code Samples</a>
 
