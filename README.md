@@ -1,6 +1,6 @@
 # GAE/Bingo
 
-GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan Academy](http://www.khanacademy.org) and *heavily* inspired by [Patrick McKenzie](http://www.kalzumeus.com)'s [A/Bingo](http://www.bingocardcreator.com/abingo). If you're on App Engine, GAE/Bingo can get your A/B tests up and running in minutes.
+GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan Academy](http://www.khanacademy.org) and *heavily* modeled after [Patrick McKenzie](http://www.kalzumeus.com)'s [A/Bingo](http://www.bingocardcreator.com/abingo). If you're on App Engine, GAE/Bingo can get your A/B tests up and running in minutes.
 
 You can read [more about the initial inspiration and design of
 GAE/Bingo](http://bjk5.com/coming-soon).
@@ -190,7 +190,7 @@ cron:
 \# to the experiment dashboard.
 \#
 def can_control_experiments():
-    # This default implementation will be fine for most
+    \# This default implementation will be fine for most
     return users.is_current_user_admin()
 </pre><br/>
 <pre>
