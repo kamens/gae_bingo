@@ -1,4 +1,4 @@
-# Google App Engine Bingo
+# GAE/Bingo
 
 GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan Academy](http://www.khanacademy.org) and *heavily* inspired by [Patrick McKenzie](http://www.kalzumeus.com)'s [A/Bingo](http://www.bingocardcreator.com/abingo). If you're on App Engine, GAE/Bingo can get your A/B tests up and running in minutes.
 
@@ -17,7 +17,7 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 ## <a name="features">Features</a>
 
-Free features inherited [directly from A/Bingo's design](http://www.bingocardcreator.com/abingo):
+Free features [inherited quite directly from A/Bingo's design](http://www.bingocardcreator.com/abingo):
 
 * Test display or behavioral differences in one line of code.
 * Measure any event as a conversion in one line of code.
@@ -27,7 +27,7 @@ Free features inherited [directly from A/Bingo's design](http://www.bingocardcre
 
 Plus extra goodies:
 
-* Drop-in split testing for App Engine with minimal configuration
+* Drop into App Engine with minimal configuration
 * Framework agnostic -- works with webapp, Django, Flask, whatever.
 * Persistent storage of test results -- if you're running experiments
   that take a long time like, say, [testing your software's effects on a student's education](http://www.khanacademy.org), that's no problem.
