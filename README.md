@@ -11,7 +11,7 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 * <a href="#screens">Screenshots and Code Samples</a>  
 * <a href="#principles">Design Principles</a>  
 * <a href="#start">Getting Started</a>  
-* <a href="#non-features">Non-features</a>  
+* <a href="#non-features">Non-features so far</a>  
 * <a href="#bonus">Bonus</a>  
 * <a href="#faq">FAQ</a>  
 
@@ -95,6 +95,7 @@ functions.
 # SIMPLE
 #
 # Returns True or False
+#
 use_new_button_design = ab_test("new button design")
 
 ...
@@ -102,6 +103,7 @@ use_new_button_design = ab_test("new button design")
 # LIST OF ALTERNATIVES
 #
 # Returns "old" or "shiny"
+#
 button_class = ab_test("new button class", ["old", "shiny"])
 
 ...
@@ -109,6 +111,7 @@ button_class = ab_test("new button class", ["old", "shiny"])
 # LIST OF >2 ALTERNATIVES (multivariate testing)
 #
 # Returns 10, 15, or 20
+#
 answers_required = ab_test("answers required", [10, 15, 20])
 
 ...
@@ -117,6 +120,7 @@ answers_required = ab_test("answers required", [10, 15, 20])
 # (use a dictionary with alternatives as keys and weights as values)
 #
 # Returns "crazy" to 1/5 of your users and "normal" to 4/5 of your users
+#
 crazy_experiment = ab_test("crazy experiment", {"crazy": 1, "normal": 4})
 
 </pre>
@@ -126,8 +130,7 @@ You may want to statistically examine different dimensions of an experiment's
 effects. You can do this by passing an array to the conversion_name parameter.
 
 <pre>
-animal_type = ab_test("animal type", ["crocodile", "armadillo"],
-conversion_name=["animals escaped", "animals found"])
+breed_new_animal = ab_test("breed new animal", conversion_name=["animals escaped", "talking animals"])
 </pre>
 
 This syntactic sugar will automatically create multiple experiments for you.
@@ -141,16 +144,16 @@ bingo("animals escaped")
 ...and...
 
 <pre>
-bingo("animals found")
+bingo("talking animals")
 </pre>
 
 ## <a name="principles">Design Principles</a>
 
 Just go read through [Patrick McKenzie's slides on A/B testing design principles](http://www.bingocardcreator.com/abingo/design). This implementation only tweaks those to achieve:
 
-* Must persist to datastore for very-long-lasting records and very-long-running
+* Persistence to datastore for very-long-lasting records and very-long-running
   experiments without sacrificing performance.
-* As quick to drop-in as possible for any App Engine (Python) developer, with
+* Quick to drop-in for any App Engine (Python) developer, with
   strong-but-customizable ties to existing App Engine user identities.
 
 ## <a name="start">Getting Started</a>
@@ -171,7 +174,7 @@ free to help us accomplish the following:
 
 ## <a name="bonus">Bonus</a>
 
-GAE/Bingo is currently in production use at Khan Academy (http://khanacademy.org). If you make find good use of it elsewhere, be sure to let us know so we can brag about you to others (ben@khanacademy.org).
+GAE/Bingo is currently in production use at Khan Academy (http://khanacademy.org). If you make good use of it elsewhere, be sure to let us know so we can brag about you to others (ben@khanacademy.org).
 
 ## <a name="faq">FAQ</a>
 
@@ -183,7 +186,7 @@ GAE/Bingo is currently in production use at Khan Academy (http://khanacademy.org
 2. Shouldn't I just be using Google Website Optimizer or some other
    javascript-powered A/B testing framework?
 
-   [I'll let Patrick handle this one](http://www.bingocardcreator.com/abingo/compare).
+    [I'll let Patrick handle this one](http://www.bingocardcreator.com/abingo/compare).
 
 3. How come you didn't just use one of the existing Python split testing
    frameworks like django-lean?
@@ -197,4 +200,4 @@ GAE/Bingo is currently in production use at Khan Academy (http://khanacademy.org
 
 4. Can I use this framework for my app/client/iguana website?
 
-    It's all yours. Do whatever you want.
+    It's all yours.
