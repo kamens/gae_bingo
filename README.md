@@ -49,7 +49,7 @@ Your dashboard, available at `/gae_bingo/dashboard`, lets you control all experi
 
 ## <a name="bare">Bare Minimum Example</a>
 
-These two lines of code calling these two functions are all you need to start A/B testing.
+These two lines of code calling the `ab_test` and `bingo` functions are all you need to start A/B testing.
 
 <pre>from gae_bingo.gae_bingo import ab_test, bingo
 
