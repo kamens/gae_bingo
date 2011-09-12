@@ -9,6 +9,7 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 * <a href="#features">Features</a>  
 * <a href="#screens">Experiment Dashboard</a>
+* <a href="#bare">Bare Minimum Example</a>
 * <a href="#usage">Usage and Code Samples</a>  
   * <a href="#starting">Starting an experiment</a>
   * <a href="#scoring">Scoring a conversion</a>
@@ -45,6 +46,21 @@ Plus some stuff to satisfy Khan Academy's needs:
 <img src="http://i.imgur.com/x4Hew.png"/><br/>
 
 Your dashboard, available at `/gae_bingo/dashboard`, lets you control all experiments and provides statistical analysis of results.</em>
+
+## <a name="bare">Bare Minimum Example</a>
+
+These two lines of code calling these two functions are all you need to start A/B testing.
+
+<pre>from gae_bingo.gae_bingo import ab_test, bingo
+
+\# Start an ab_test, returning True or False
+use_new_button_design = ab_test("new button design"):
+
+\#...then, when ready to score a conversion...
+bingo("new button design")
+</pre>
+
+That's it! You're split-testing your users, with consistent behavior per-user, automatic statistical tracking, and more. If you want more power, read on.
 
 ## <a name="usage">Usage and Code Samples</a>
 
