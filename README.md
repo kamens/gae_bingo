@@ -156,6 +156,13 @@ alternatives behave before you ship 'em, you can override the current request's
 selection of A/B alternatives by adding the `gae_bingo_alternative_number`
 request param, like so: `?gae_bingo_alternative_number=2`
 
+### Ending an experiment
+Typically, ending an experiment will go something like this:
+
+1. You'll notice a clear winner and click "End experiment, picking this" on the dashboard. All users will now see your chosen alternative.  
+2. You'll go into the code and remove your old ab_test() call, replacing it w/ the clear winner.  
+3. You'll delete the experiment from the dashboard if you no longer need its historical record.
+
 ## <a name="principles">Design Principles</a>
 
 Just go read through [Patrick McKenzie's slides on A/B testing design principles](http://www.bingocardcreator.com/abingo/design). This implementation only tweaks those to achieve:
