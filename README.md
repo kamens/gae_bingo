@@ -66,7 +66,7 @@ That's it! You're split-testing your users, with consistent behavior per-user, a
 
 ### <a name="starting">Starting an experiment</a>
 This line of code will automatically set up an A/B test named "new button
-design" (if necessary) and return True or False by default. Use this anywhere
+design" (the first time only) and return True or False. Use this anywhere
 you can run Python code, it's highly optimized.
 
 <pre>from gae_bingo.gae_bingo import ab_test
