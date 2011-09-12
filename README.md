@@ -18,7 +18,7 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 ## <a name="features">Features</a>
 
-Free features [inherited quite directly from A/Bingo's design](http://www.bingocardcreator.com/abingo):
+Free features [inherited quite directly from A/Bingo's design](http://www.bingocardcreator.com/abingo) (imagine quotes around the following):
 
 * Test display or behavioral differences in one line of code.
 * Measure any event as a conversion in one line of code.
@@ -26,7 +26,7 @@ Free features [inherited quite directly from A/Bingo's design](http://www.bingoc
 * Blazingly fast, with minimal impact on page load times or server load.
 * Written by programmers, for programmers. Marketing is an engineering discipline!
 
-Plus extra goodies:
+Plus some stuff to satisfy Khan Academy's needs:
 
 * Drop into App Engine with minimal configuration
 * Framework agnostic -- works with webapp, Django, Flask, whatever.
