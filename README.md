@@ -10,6 +10,12 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 * <a href="#features">Features</a>  
 * <a href="#screens">Experiment Dashboard</a>
 * <a href="#usage">Usage and Code Samples</a>  
+  * <a href="#starting">Starting an experiment</a>
+  * <a href="#scoring">Scoring a conversion</a>
+  * <a href="#specifying">Specifying alternatives</a>
+  * <a href="#multiple">Multiple conversion types</a>
+  * <a href="#testing">Testing your alternatives</a>
+  * <a href="#controlling">Controlling and ending your experiments</a>
 * <a href="#principles">Design Principles</a>  
 * <a href="#start">Getting Started</a>  
 * <a href="#non-features">Non-features so far</a>  
@@ -38,11 +44,11 @@ Plus some stuff to satisfy Khan Academy's needs:
 
 <img src="http://i.imgur.com/x4Hew.png"/><br/>
 
-Your dashboard lets you control all experiments and provides statistical analysis of results.</em>
+Your dashboard, available at `/gae_bingo/dashboard`, lets you control all experiments and provides statistical analysis of results.</em>
 
 ## <a name="usage">Usage and Code Samples</a>
 
-### Starting an experiment
+### <a name="starting">Starting an experiment</a>
 This line of code will automatically set up an A/B test named "new button
 design" (if necessary) and return True or False by default. Use this anywhere
 you can run Python code, it's highly optimized.
@@ -70,7 +76,7 @@ else:
 If you don't specify a conversion_name when starting a test, GAE/Bingo will
 automatically listen for conversions with the same name as the experiment.
 
-### Scoring a conversion
+### <a name="scoring">Scoring a conversion</a>
 This line of code will score a conversion in the "new button design" experiment
 for the current user.
 
@@ -84,7 +90,7 @@ bingo("new button design")
 <pre>bingo("animals escaped")
 </pre>
 
-### Specifying alternatives
+### <a name="specifying">Specifying alternatives</a>
 Even though the above two lines are all you need to start running some pretty
 useful A/B tests, you've got more power than that. Choose from any of the
 following lines of code to return various alternatives for your tests.
@@ -128,7 +134,7 @@ crazy_experiment = ab_test("crazy experiment", {"crazy": 1, "normal": 4})
 
 </pre>
 
-### Analyzing multiple types of results for a single experiment
+### <a name="multiple">Analyzing multiple types of results for a single experiment</a>
 You may want to statistically examine different dimensions of an experiment's
 effects. You can do this by passing an array to the conversion_name parameter.
 
@@ -150,16 +156,17 @@ bingo("animals escaped")
 bingo("talking animals")
 </pre>
 
-### Testing your alternatives ahead of time
+### <a name="testing">Testing your alternatives ahead of time</a>
 If you're on the dev server and wanna take a look-see at how your various
 alternatives behave before you ship 'em, you can override the current request's
 selection of A/B alternatives by adding the `gae_bingo_alternative_number`
 request param, like so: `?gae_bingo_alternative_number=2`
 
-### Ending an experiment
+### <a name="controlling">Controlling and ending your experiments</a>
 Typically, ending an experiment will go something like this:
 
-1. You'll notice a clear winner and click "End experiment, picking this" on the dashboard. All users will now see your chosen alternative.  
+1. You'll check out your dashboard at `/gae_bingo/dashboard`
+1. You'll notice a clear experiment winner and click "End experiment, picking this" on the dashboard. All users will now see your chosen alternative.  
 2. You'll go into the code and remove your old ab_test() call, replacing it w/ the clear winner.  
 3. You'll delete the experiment from the dashboard if you no longer need its historical record.
 
