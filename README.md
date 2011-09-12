@@ -172,6 +172,8 @@ bingo("animals escaped")
 bingo("talking animals")
 </pre>
 
+This lets you monitor your experiment's statistical effects on both escaping and talking animals, separately, via the dashboard.
+
 ### <a name="testing">Testing your alternatives ahead of time</a>
 If you're on the dev server and wanna take a look-see at how your various
 alternatives behave before you ship 'em, you can override the current request's
