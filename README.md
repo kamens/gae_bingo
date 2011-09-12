@@ -128,7 +128,7 @@ crazy_experiment = ab_test("crazy experiment", {"crazy": 1, "normal": 4})
 
 </pre>
 
-### Testing multiple results for a single experiment
+### Analyzing multiple types of results for a single experiment
 You may want to statistically examine different dimensions of an experiment's
 effects. You can do this by passing an array to the conversion_name parameter.
 
@@ -149,6 +149,12 @@ bingo("animals escaped")
 <pre>
 bingo("talking animals")
 </pre>
+
+### Testing your alternatives ahead of time
+If you're on the dev server and wanna take a look-see at how your various
+alternatives behave before you ship 'em, you can override the current request's
+selection of A/B alternatives by adding the `gae_bingo_alternative_number`
+request param, like so: `?gae_bingo_alternative_number=2`
 
 ## <a name="principles">Design Principles</a>
 
