@@ -15,8 +15,6 @@ GAE/Bingo](http://bjk5.com/coming-soon).
 * <a href="#bonus">Bonus</a>  
 * <a href="#faq">FAQ</a>  
 
-GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
-
 ## <a name="features">Features</a>
 
 Free features [inherited quite directly from A/Bingo's design](http://www.bingocardcreator.com/abingo) (imagine quotes around the following):
@@ -305,7 +303,7 @@ GAE/Bingo is currently in production use at [Khan Academy](http://khanacademy.or
 
 4. Can I use this framework for my iguana website?
 
-    It's all yours.
+    It's all yours. GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 5. Did you design the dashboard template?
 
