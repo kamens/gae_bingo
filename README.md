@@ -5,8 +5,6 @@ GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan A
 You can read [more about the initial inspiration and design of
 GAE/Bingo](http://bjk5.com/coming-soon).
 
-GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
-
 * <a href="#features">Features</a>  
 * <a href="#screens">Experiment Dashboard</a>
 * <a href="#bare">Bare Minimum Example</a>
@@ -16,6 +14,8 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 * <a href="#non-features">Non-features so far</a>  
 * <a href="#bonus">Bonus</a>  
 * <a href="#faq">FAQ</a>  
+
+GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 ## <a name="features">Features</a>
 
