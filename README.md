@@ -11,12 +11,6 @@ GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 * <a href="#screens">Experiment Dashboard</a>
 * <a href="#bare">Bare Minimum Example</a>
 * <a href="#usage">Usage and Code Samples</a>  
-  * <a href="#starting">Starting an experiment</a>
-  * <a href="#scoring">Scoring a conversion</a>
-  * <a href="#specifying">Specifying alternatives</a>
-  * <a href="#multiple">Multiple conversion types</a>
-  * <a href="#testing">Testing your alternatives</a>
-  * <a href="#controlling">Controlling and ending your experiments</a>
 * <a href="#principles">Design Principles</a>  
 * <a href="#start">Getting Started</a>  
 * <a href="#non-features">Non-features so far</a>  
@@ -63,6 +57,13 @@ bingo("new button design")
 That's it! You're split-testing your users, with consistent behavior per-user, automatic statistical tracking, and more. If you want more power, read on.
 
 ## <a name="usage">Usage and Code Samples</a>
+
+  * <a href="#starting">Starting an experiment</a>
+  * <a href="#scoring">Scoring a conversion</a>
+  * <a href="#specifying">Specifying alternatives</a>
+  * <a href="#multiple">Multiple conversion types</a>
+  * <a href="#testing">Testing your alternatives</a>
+  * <a href="#controlling">Controlling and ending your experiments</a>
 
 ### <a name="starting">Starting an experiment</a>
 This line of code will automatically set up an A/B test named "new button
