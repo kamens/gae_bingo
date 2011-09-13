@@ -3,7 +3,7 @@
 GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan Academy](http://www.khanacademy.org) and *heavily* modeled after [Patrick McKenzie](http://www.kalzumeus.com)'s [A/Bingo](http://www.bingocardcreator.com/abingo). If you're on App Engine, GAE/Bingo can get your A/B tests up and running in minutes.
 
 You can read [more about the initial inspiration and design of
-GAE/Bingo](http://bjk5.com/coming-soon).
+GAE/Bingo](http://bjk5.com/post/10171483254/a-bingo-split-testing-now-on-app-engine-built-for-khan).
 
 * <a href="#features">Features</a>  
 * <a href="#screens">Experiment Dashboard</a>
