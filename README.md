@@ -297,7 +297,8 @@ GAE/Bingo is currently in production use at [Khan Academy](http://khanacademy.or
 
     django-lean is awesome, but we strongly believe in a couple of the core
     principles of A/Bingo, particularly making it as ridiculously easy as
-    possible for developers (and anybody else) to create A/B tests.
+    possible for developers (and anybody else) to create A/B tests. We couldn't find
+    a framework that satisfied our needs, so we decided to spread the A/Bingo love.
 
     We also wanted this to quickly drop into any App Engine app, and we didn't want to
     exclude those on App Engine who aren't using Django.
