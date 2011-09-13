@@ -302,7 +302,7 @@ GAE/Bingo is currently in production use at [Khan Academy](http://khanacademy.or
     We also wanted this to quickly drop into any App Engine app, and we didn't want to
     exclude those on App Engine who aren't using Django.
 
-4. Can I use this framework for my app/client/iguana website?
+4. Can I use this framework for my iguana website?
 
     It's all yours.
 
