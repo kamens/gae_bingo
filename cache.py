@@ -18,7 +18,8 @@ from identity import identity
 # ...if you need to run one-time configuration or path manipulation code when an instance
 # is started, you may need to add that code to this file as this file will become
 # a possibly instance-starting entry point. See docs and above Stack Oveflow question.
-import config_django
+#
+# Example: import config_django
 
 # REQUEST_CACHE is cleared before and after every requests by gae_bingo.middleware.
 # NOTE: this request caching will need a bit of a touchup once Python 2.7 is released for GAE and concurrent requests are enabled.
