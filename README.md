@@ -45,10 +45,10 @@ These two lines of code calling the `ab_test` and `bingo` functions are all you 
 
 <pre>from gae_bingo.gae_bingo import ab_test, bingo
 
-\# Start an ab_test, returning True or False
+# Start an ab_test, returning True or False
 use_new_button_design = ab_test("new button design"):
 
-\#...then, when ready to score a conversion...
+#...then, when ready to score a conversion...
 bingo("new button design")
 </pre>
 
