@@ -1,0 +1,13 @@
+handlers:
+
+- url: /gae_bingo/static
+  static_dir: gae_bingo/static
+  expiration: "300s"
+
+- url: /gae_bingo/tests/.*
+  script: gae_bingo/tests/main.py
+
+- url: /gae_bingo/.*
+  script: gae_bingo/main.py
+
+

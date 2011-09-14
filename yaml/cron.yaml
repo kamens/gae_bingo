@@ -1,0 +1,6 @@
+cron:
+
+- description: persist gae bingo experiments to datastore
+  url: /gae_bingo/persist
+  schedule: every 5 minutes
+
