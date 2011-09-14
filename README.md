@@ -3,12 +3,11 @@
 GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan Academy](http://www.khanacademy.org) and *heavily* modeled after [Patrick McKenzie](http://www.kalzumeus.com)'s [A/Bingo](http://www.bingocardcreator.com/abingo). If you're on App Engine, GAE/Bingo can get your A/B tests up and running in minutes.
 
 You can read [more about the initial inspiration and design of
-GAE/Bingo](http://bjk5.com/coming-soon).
-
-GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
+GAE/Bingo](http://bjk5.com/post/10171483254/a-bingo-split-testing-now-on-app-engine-built-for-khan).
 
 * <a href="#features">Features</a>  
 * <a href="#screens">Experiment Dashboard</a>
+* <a href="#bare">Bare Minimum Example</a>
 * <a href="#usage">Usage and Code Samples</a>  
 * <a href="#principles">Design Principles</a>  
 * <a href="#start">Getting Started</a>  
@@ -38,13 +37,35 @@ Plus some stuff to satisfy Khan Academy's needs:
 
 <img src="http://i.imgur.com/x4Hew.png"/><br/>
 
-Your dashboard lets you control all experiments and provides statistical analysis of results.</em>
+Your dashboard, available at `/gae_bingo/dashboard`, lets you control all experiments and provides statistical analysis of results.</em>
+
+## <a name="bare">Bare Minimum Example</a>
+
+These two lines of code calling the `ab_test` and `bingo` functions are all you need to start A/B testing.
+
+<pre>from gae_bingo.gae_bingo import ab_test, bingo
+
+# Start an ab_test, returning True or False
+use_new_button_design = ab_test("new button design"):
+
+#...then, when ready to score a conversion...
+bingo("new button design")
+</pre>
+
+That's it! You're split-testing your users, with consistent behavior per-user, automatic statistical tracking, and more. If you want more power, read on.
 
 ## <a name="usage">Usage and Code Samples</a>
 
-### Starting an experiment
+  * <a href="#starting">Starting an experiment</a>
+  * <a href="#scoring">Scoring a conversion</a>
+  * <a href="#specifying">Specifying alternatives</a>
+  * <a href="#multiple">Multiple conversion types</a>
+  * <a href="#testing">Testing your alternatives</a>
+  * <a href="#controlling">Controlling and ending your experiments</a>
+
+### <a name="starting">Starting an experiment</a>
 This line of code will automatically set up an A/B test named "new button
-design" (if necessary) and return True or False by default. Use this anywhere
+design" (the first time only) and return True or False. Use this anywhere
 you can run Python code, it's highly optimized.
 
 <pre>from gae_bingo.gae_bingo import ab_test
@@ -70,7 +91,7 @@ else:
 If you don't specify a conversion_name when starting a test, GAE/Bingo will
 automatically listen for conversions with the same name as the experiment.
 
-### Scoring a conversion
+### <a name="scoring">Scoring a conversion</a>
 This line of code will score a conversion in the "new button design" experiment
 for the current user.
 
@@ -84,7 +105,7 @@ bingo("new button design")
 <pre>bingo("animals escaped")
 </pre>
 
-### Specifying alternatives
+### <a name="specifying">Specifying alternatives</a>
 Even though the above two lines are all you need to start running some pretty
 useful A/B tests, you've got more power than that. Choose from any of the
 following lines of code to return various alternatives for your tests.
@@ -128,7 +149,7 @@ crazy_experiment = ab_test("crazy experiment", {"crazy": 1, "normal": 4})
 
 </pre>
 
-### Analyzing multiple types of results for a single experiment
+### <a name="multiple">Analyzing multiple types of results for a single experiment</a>
 You may want to statistically examine different dimensions of an experiment's
 effects. You can do this by passing an array to the conversion_name parameter.
 
@@ -150,11 +171,21 @@ bingo("animals escaped")
 bingo("talking animals")
 </pre>
 
-### Testing your alternatives ahead of time
+This lets you monitor your experiment's statistical effects on both escaping and talking animals, separately, via the dashboard.
+
+### <a name="testing">Testing your alternatives ahead of time</a>
 If you're on the dev server and wanna take a look-see at how your various
 alternatives behave before you ship 'em, you can override the current request's
 selection of A/B alternatives by adding the `gae_bingo_alternative_number`
 request param, like so: `?gae_bingo_alternative_number=2`
+
+### <a name="controlling">Controlling and ending your experiments</a>
+Typically, ending an experiment will go something like this:
+
+1. You'll check out your dashboard at `/gae_bingo/dashboard`
+1. You'll notice a clear experiment winner and click "End experiment, picking this" on the dashboard. All users will now see your chosen alternative.  
+2. You'll go into the code and remove your old ab_test() call, replacing it w/ the clear winner.  
+3. You'll delete the experiment from the dashboard if you no longer need its historical record.
 
 ## <a name="principles">Design Principles</a>
 
@@ -264,14 +295,15 @@ GAE/Bingo is currently in production use at [Khan Academy](http://khanacademy.or
 
     django-lean is awesome, but we strongly believe in a couple of the core
     principles of A/Bingo, particularly making it as ridiculously easy as
-    possible for developers (and anybody else) to create A/B tests.
+    possible for developers (and anybody else) to create A/B tests. We couldn't find
+    a framework that satisfied our needs, so we decided to spread the A/Bingo love.
 
     We also wanted this to quickly drop into any App Engine app, and we didn't want to
     exclude those on App Engine who aren't using Django.
 
-4. Can I use this framework for my app/client/iguana website?
+4. Can I use this framework for my iguana website?
 
-    It's all yours.
+    It's all yours. GAE/Bingo is [MIT licensed](http://en.wikipedia.org/wiki/MIT_License).
 
 5. Did you design the dashboard template?
 
