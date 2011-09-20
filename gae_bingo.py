@@ -112,12 +112,19 @@ def bingo(param):
     else:
 
         conversion_name = str(param)
+        canonical_name = None
+        bingo_cache = BingoCache.get()
 
         # Bingo for all experiments associated with this conversion
-        for experiment_name in BingoCache.get().get_experiment_names_by_conversion_name(conversion_name):
-            score_conversion(experiment_name)
+        for experiment_name in bingo_cache.get_experiment_names_by_conversion_name(conversion_name):
 
-def score_conversion(experiment_name):
+            if not canonical_name:
+                experiment = bingo_cache.get_experiment(experiment_name)
+                canonical_name = experiment.canonical_name
+
+            score_conversion(experiment_name, canonical_name)
+
+def score_conversion(experiment_name, canonical_name):
 
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
 
@@ -133,7 +140,7 @@ def score_conversion(experiment_name):
         # Don't count conversions for short-circuited experiments that are no longer live
         return
 
-    alternative = find_alternative_for_user(experiment_name, bingo_cache.get_alternatives(experiment_name))
+    alternative = find_alternative_for_user(canonical_name, bingo_cache.get_alternatives(experiment_name))
 
     alternative.increment_conversions()
     bingo_cache.update_alternative(alternative)
