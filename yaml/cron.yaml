@@ -4,3 +4,7 @@ cron:
   url: /gae_bingo/persist
   schedule: every 5 minutes
 
+- description: log a snapshot of live experiement data to datastore 
+  url: /gae_bingo/log_snapshot
+  schedule: every 30 minutes
+
