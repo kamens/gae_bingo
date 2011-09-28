@@ -8,7 +8,7 @@ from google.appengine.api import memcache
 from google.appengine.datastore import entity_pb
 from google.appengine.ext.webapp import RequestHandler
 
-from .models import _GAEBingoExperiment, _GAEBingoAlternative, _GAEBingoIdentityRecord
+from .models import _GAEBingoExperiment, _GAEBingoAlternative, _GAEBingoIdentityRecord, _GAEBingoSnapshotLog
 from identity import identity
 
 # gae_bingo relies on the deferred library,
@@ -18,8 +18,7 @@ from identity import identity
 # ...if you need to run one-time configuration or path manipulation code when an instance
 # is started, you may need to add that code to this file as this file will become
 # a possibly instance-starting entry point. See docs and above Stack Oveflow question.
-#
-# Example: import config_django
+import config_django
 
 # REQUEST_CACHE is cleared before and after every requests by gae_bingo.middleware.
 # NOTE: this request caching will need a bit of a touchup once Python 2.7 is released for GAE and concurrent requests are enabled.
@@ -92,6 +91,23 @@ class BingoCache(object):
                 alternative_model.load_latest_counts()
                 alternative_model.put()
 
+    def log_cache_snapshot(self):
+
+        # Log current data on live experiments to the datastore
+        for experiment_name in self.experiments:
+            experiment_model = self.get_experiment(experiment_name)
+            if experiment_model and experiment_model.live :
+                self.log_experiment_snapshot (experiment_model)
+            
+    def log_experiment_snapshot(self, experiment_model):
+
+        alternative_models = self.get_alternatives(experiment_model.name)
+        for alternative_model in alternative_models:
+            # When logging, we want to store the most recent value we've got
+            alternative_model.load_latest_counts()
+            log_entry = _GAEBingoSnapshotLog(parent=experiment_model, alternative_name=alternative_model.content, conversions=alternative_model.conversions, participants=alternative_model.participants)
+            log_entry.put()
+    
     @staticmethod
     def load_from_datastore():
 
@@ -366,3 +382,8 @@ class PersistToDatastore(RequestHandler):
     def get(self):
         BingoCache.get().persist_to_datastore()
         BingoIdentityCache.persist_buckets_to_datastore()
+        
+class LogSnapshotToDatastore(RequestHandler):
+    def get(self):
+        BingoCache.get().log_cache_snapshot()
+
