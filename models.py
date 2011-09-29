@@ -41,6 +41,7 @@ class _GAEBingoExperiment(db.Model):
     @staticmethod
     def exists(name):
         return cache.exists(Experiment.key_for_name(name))
+    
 
 class _GAEBingoAlternative(db.Model):
     number = db.IntegerProperty()
@@ -93,7 +94,15 @@ class _GAEBingoAlternative(db.Model):
         # When persisting to datastore, we want to store the most recent value we've got
         self.participants = max(self.participants, long(memcache.get("%s:participants" % self.key_for_self()) or 0))
         self.conversions = max(self.conversions, long(memcache.get("%s:conversions" % self.key_for_self()) or 0))
+        
 
+class _GAEBingoSnapshotLog(db.Model):
+    alternative_number = db.IntegerProperty()
+    conversions = db.IntegerProperty(default = 0)
+    participants = db.IntegerProperty(default = 0)
+    time_recorded = db.DateTimeProperty(auto_now_add = True)
+        
+    
 class _GAEBingoIdentityRecord(db.Model):
     identity = db.StringProperty()
     pickled = db.BlobProperty()

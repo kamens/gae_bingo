@@ -1,73 +1,41 @@
-<html>
-    <head>
-        <title>GAE/Bingo Dashboard</title>
-        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+{% extends "base.html" %}
+{% block title %}GAE/Bingo Dashboard{% endblock title %}
+{% block head %}
+    <script>
+        $(function() {
+            $(".end-experiment").click( function(e) {
 
-        <link rel="stylesheet" href="/gae_bingo/static/css/base.css" type="text/css" media="screen" />
-        <link rel="stylesheet" id="current-theme" href="/gae_bingo/static/css/style.css" type="text/css" media="screen" />
+                var alternativeNumber = $(this).data("number");
 
-        <style>
-            body {
-                text-align: center;
-            }
+                if (!confirm("Are you sure you want to end this experiment and choose alternative #" + alternativeNumber + "?\n\n***If you have multiple experiments running with the same experiment name, you will end and choose this alternative for all of them.***"))                     {
 
-            #main {
-                margin-left: auto;
-                margin-right: auto;
-                text-align: left;
-                float: none;
-                width: 900px;
-            }
+                    e.preventDefault();
 
-            #main table.table {
-                width: 100%;
-            }
-
-            #main div.experiment-container {
-                padding: 20px;
-                margin-top: 20px;
-            }
-
-            #main table.table th {
-                width: 20%;
-            }
-
-            #main .delete-experiment {
-                float: none;
-                display: inline;
-                margin-right: 0;
-            }
-        </style>
-
-        <script>
-            $(function() {
-                $(".end-experiment").click( function(e) {
-
-                    var alternativeNumber = $(this).data("number");
-
-                    if (!confirm("Are you sure you want to end this experiment and choose alternative #" + alternativeNumber + "?\n\n***If you have multiple experiments running with the same experiment name, you will end and choose this alternative for all of them.***"))                     {
-
-                        e.preventDefault();
-
-                    }
-                });
+                }
             });
-        </script>
-    </head>
-    <body>
-        <div id="main">
-            <div id="header"><h1>GAE/Bingo Experiments</h1></div>
+        });
+    </script>
+{% endblock head %}
 
-            {% if not experiment_results %}
-            <div class="experiment-container block">
-                <h3>No experiments yet.</h3>
-                <p>You really should try experimenting more.</p>
-            </div>
-            {% endif %}
+{% block body %}
+    <div id="main">
+        <div id="header"><h1>GAE/Bingo Experiments</h1></div>
 
-            {% for results in experiment_results %}
-            <div class="experiment-container block">
+        {% if not experiment_results %}
+        <div class="experiment-container block">
+            <h3>No experiments yet.</h3>
+            <p>You really should try experimenting more.</p>
+        </div>
+        {% endif %}
+
+        {% for results in experiment_results %}
+        <div class="experiment-container block">
+
+
+            <table class="table"><tbody><tr>
+            <td>
                 <h2 class="experiment-title">{{ results.0.pretty_name|escape }}</h2>
+
                 {% if results.0.live %}
                 <p>
                     <strong>Status: </strong>
@@ -86,61 +54,68 @@
                 </p>
                 </form>
                 {% endif %}
+            </td>
+            <td align="right">
+                <form action="/gae_bingo/dashboard/plot_experiment" method="POST">
+                    <input type="hidden" name="experiment_name" value="{{ results.0.name|escape }}"/>
+                    <button type="submit" class="button delete-experiment" name="action" value="choose_alternative">Plot this exepriment</button>
+                </form>
+            </td>
+            </tr></tbody></table>
+            
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Content</th>
+                        <th>Participants</th>
+                        <th>Conversions
+                            {% ifnotequal results.0.conversion_name results.0.name %}
+                            to <em>{{ results.0.conversion_name|escape }}</em>
+                            {% endifnotequal%}
+                        </th>
+                        <th>&nbsp;</th>
+                    </tr>
 
-                <table class="table">
-                    <tbody>
-                        <tr>
-                            <th>&nbsp;</th>
-                            <th>Content</th>
-                            <th>Participants</th>
-                            <th>Conversions
-                                {% ifnotequal results.0.conversion_name results.0.name %}
-                                to <em>{{ results.0.conversion_name|escape }}</em>
-                                {% endifnotequal%}
-                            </th>
-                            <th>&nbsp;</th>
-                        </tr>
+                    {% for alternative in results.1 %}
+                    <tr>
+                        <td class="title"><em>Alternative #{{ alternative.number }}</em></td>
+                        <td>{{ alternative.content|escape }}</td>
+                        <td>{{ alternative.participants }}</td>
+                        <td>{{ alternative.conversions }} ({{ alternative.pretty_conversion_rate }})</td>
+                        <td>
+                            {% if results.0.live %}
 
-                        {% for alternative in results.1 %}
-                        <tr>
-                            <td class="title"><em>Alternative #{{ alternative.number }}</em></td>
-                            <td>{{ alternative.content|escape }}</td>
-                            <td>{{ alternative.participants }}</td>
-                            <td>{{ alternative.conversions }} ({{ alternative.pretty_conversion_rate }})</td>
-                            <td>
-                                {% if results.0.live %}
+                            <form action="/gae_bingo/dashboard/control_experiment" method="POST">
+                                <input type="hidden" name="experiment_name" value="{{ alternative.experiment_name|escape }}"/>
+                                <input type="hidden" name="alternative_number" value="{{ alternative.number|escape }}"/>
+                                <button type="submit" data-number="{{ alternative.number|escape }}" class="button end-experiment" name="action" value="choose_alternative">End experiment, picking this</button>
+                            </form>
 
-                                <form action="/gae_bingo/dashboard/control_experiment" method="POST">
-                                    <input type="hidden" name="experiment_name" value="{{ alternative.experiment_name|escape }}"/>
-                                    <input type="hidden" name="alternative_number" value="{{ alternative.number|escape }}"/>
-                                    <button type="submit" data-number="{{ alternative.number|escape }}" class="button end-experiment" name="action" value="choose_alternative">End experiment, picking this</button>
-                                </form>
-
+                            {% else %}
+                                {% ifequal results.0.short_circuit_content alternative.content %}
+                                <strong>All users seeing this.</strong>
                                 {% else %}
-                                    {% ifequal results.0.short_circuit_content alternative.content %}
-                                    <strong>All users seeing this.</strong>
-                                    {% else %}
-                                    &nbsp;
-                                    {% endifequal %}
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
+                                &nbsp;
+                                {% endifequal %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
 
-                        <tr>
-                            <td class="title"><em>Total</em></td>
-                            <td>&nbsp;</td>
-                            <td>{{ results.2 }}</td>
-                            <td>{{ results.3 }}</td>
-                            <td>&nbsp;</td>
-                        </tr>
-                    </tbody>
-                </table>
+                    <tr>
+                        <td class="title"><em>Total</em></td>
+                        <td>&nbsp;</td>
+                        <td>{{ results.2 }}</td>
+                        <td>{{ results.3 }}</td>
+                        <td>&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
 
-                <p><strong>Significance Test Results: </strong>{{ results.4|escape }}</p>
-            </div>
-            {% endfor %}
+            <p><strong>Significance Test Results: </strong>{{ results.4|escape }}</p>
         </div>
-    </body>
-</html>
+        {% endfor %}
+    </div>
+{% endblock body %}
 

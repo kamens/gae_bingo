@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}GAE/Bingo Timeline Plot{% endblock title %}
+{% block head %}
+    <script src="../static/js/highcharts.js" type="text/javascript"></script>
+    <script src="../static/js/highcharts_gray_theme.js" type="text/javascript"></script>
+        
+    <script>
+    
+    var highchartsOptions = Highcharts.setOptions(Highcharts.theme);
+    
+    Highcharts.setOptions({
+        global: {
+            useUTC: false
+        }
+    });
+    
+    var chart;
+    $(document).ready(function() {
+       chart = new Highcharts.Chart({
+          chart: {
+             renderTo: 'highchart',
+             type: 'spline'
+          },
+          title: {
+             text: 'Experiement: {{ experiment_name|escape }}'
+          },
+          xAxis: {
+             type: 'datetime'
+          },
+          yAxis: {
+             title: {
+                text: 'Conversion Rate (%)'
+             },
+             min: 0
+          },
+          series: [
+            {% for ts in experiment_data %}
+                { 
+                    name : '{{ ts.name|escape }}' , 
+                    data : {{ ts.snapshots }} 
+                }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+       });
+    });
+    </script>
+
+{% endblock head %}
+
+{% block body %}
+    <div id="main">
+        <div id="header"><h1>GAE/Bingo Timeline Plot</h1></div>
+        <div class="experiment-container block">
+            <div id="highchart"></div>
+        </div>
+    </div>
+{% endblock body %}

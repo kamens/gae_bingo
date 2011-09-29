@@ -8,7 +8,7 @@ from google.appengine.api import memcache
 from google.appengine.datastore import entity_pb
 from google.appengine.ext.webapp import RequestHandler
 
-from .models import _GAEBingoExperiment, _GAEBingoAlternative, _GAEBingoIdentityRecord
+from .models import _GAEBingoExperiment, _GAEBingoAlternative, _GAEBingoIdentityRecord, _GAEBingoSnapshotLog
 from identity import identity
 
 # gae_bingo relies on the deferred library,
@@ -92,6 +92,31 @@ class BingoCache(object):
                 alternative_model.load_latest_counts()
                 alternative_model.put()
 
+    def log_cache_snapshot(self):
+
+        # Log current data on live experiments to the datastore
+        log_entries = []
+
+        for experiment_name in self.experiments:
+            experiment_model = self.get_experiment(experiment_name)
+            if experiment_model and experiment_model.live:
+                log_entries += self.log_experiment_snapshot(experiment_model)
+
+        db.put(log_entries)
+            
+    def log_experiment_snapshot(self, experiment_model):
+
+        log_entries = []
+        
+        alternative_models = self.get_alternatives(experiment_model.name)
+        for alternative_model in alternative_models:
+            # When logging, we want to store the most recent value we've got
+            alternative_model.load_latest_counts()
+            log_entry = _GAEBingoSnapshotLog(parent=experiment_model, alternative_number=alternative_model.number, conversions=alternative_model.conversions, participants=alternative_model.participants)
+            log_entries.append(log_entry)
+
+        return log_entries
+    
     @staticmethod
     def load_from_datastore():
 
@@ -366,3 +391,8 @@ class PersistToDatastore(RequestHandler):
     def get(self):
         BingoCache.get().persist_to_datastore()
         BingoIdentityCache.persist_buckets_to_datastore()
+        
+class LogSnapshotToDatastore(RequestHandler):
+    def get(self):
+        BingoCache.get().log_cache_snapshot()
+
