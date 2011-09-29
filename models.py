@@ -97,8 +97,7 @@ class _GAEBingoAlternative(db.Model):
         
 
 class _GAEBingoSnapshotLog(db.Model):
-    experiment_name = db.StringProperty()
-    alternative_name = db.StringProperty()
+    alternative_number = db.IntegerProperty()
     conversions = db.IntegerProperty(default = 0)
     participants = db.IntegerProperty(default = 0)
     time_recorded = db.DateTimeProperty(auto_now_add = True)

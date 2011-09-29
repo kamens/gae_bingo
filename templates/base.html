@@ -1,0 +1,51 @@
+<html>
+    <head>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+        <link rel="stylesheet" href="/gae_bingo/static/css/base.css" type="text/css" media="screen" />
+        <link rel="stylesheet" id="current-theme" href="/gae_bingo/static/css/style.css" type="text/css" media="screen" />
+
+        <title>{% block title %}GAE/Bingo{% endblock %}</title>
+
+        <style>
+            body {
+                text-align: center;
+            }
+    
+            #main {
+                margin-left: auto;
+                margin-right: auto;
+                text-align: left;
+                float: none;
+                width: 900px;
+            }
+    
+            #main table.table {
+                width: 100%;
+            }
+    
+            #main div.experiment-container {
+                padding: 20px;
+                margin-top: 20px;
+            }
+    
+            #main table.table th {
+                width: 20%;
+            }
+    
+            #main .delete-experiment {
+                float: none;
+                display: inline;
+                margin-right: 0;
+            }
+        </style>
+
+
+        {% block head %}
+        {% endblock head %} 
+    </head>
+    <body>
+        {% block body %}
+        {% endblock body %} 
+    </body>
+</html>
+

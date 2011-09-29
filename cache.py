@@ -18,7 +18,8 @@ from identity import identity
 # ...if you need to run one-time configuration or path manipulation code when an instance
 # is started, you may need to add that code to this file as this file will become
 # a possibly instance-starting entry point. See docs and above Stack Oveflow question.
-import config_django
+#
+# Example: import config_django
 
 # REQUEST_CACHE is cleared before and after every requests by gae_bingo.middleware.
 # NOTE: this request caching will need a bit of a touchup once Python 2.7 is released for GAE and concurrent requests are enabled.
@@ -94,19 +95,27 @@ class BingoCache(object):
     def log_cache_snapshot(self):
 
         # Log current data on live experiments to the datastore
+        log_entries = []
+
         for experiment_name in self.experiments:
             experiment_model = self.get_experiment(experiment_name)
-            if experiment_model and experiment_model.live :
-                self.log_experiment_snapshot (experiment_model)
+            if experiment_model and experiment_model.live:
+                log_entries += self.log_experiment_snapshot(experiment_model)
+
+        db.put(log_entries)
             
     def log_experiment_snapshot(self, experiment_model):
 
+        log_entries = []
+        
         alternative_models = self.get_alternatives(experiment_model.name)
         for alternative_model in alternative_models:
             # When logging, we want to store the most recent value we've got
             alternative_model.load_latest_counts()
-            log_entry = _GAEBingoSnapshotLog(parent=experiment_model, alternative_name=alternative_model.content, conversions=alternative_model.conversions, participants=alternative_model.participants)
-            log_entry.put()
+            log_entry = _GAEBingoSnapshotLog(parent=experiment_model, alternative_number=alternative_model.number, conversions=alternative_model.conversions, participants=alternative_model.participants)
+            log_entries.append(log_entry)
+
+        return log_entries
     
     @staticmethod
     def load_from_datastore():
