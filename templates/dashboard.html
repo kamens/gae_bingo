@@ -19,7 +19,7 @@
 
 {% block body %}
     <div id="main">
-        <div id="header"><h1>GAE/Bingo Experiments</h1></div>
+        <div id="header"><h1><a href="/gae_bingo/dashboard">GAE/Bingo Experiments</a></h1></div>
 
         {% if not experiment_results %}
         <div class="experiment-container block">
@@ -30,39 +30,34 @@
 
         {% for results in experiment_results %}
         <div class="experiment-container block">
+            <div class="plot-link-container">
+                <nobr>
+                    <a href="/gae_bingo/dashboard/plot_experiment?experiment_name={{ results.0.name|escape|urlencode }}"><img src="/gae_bingo/static/images/chart.png" /></a><br/>
+                    <a href="/gae_bingo/dashboard/plot_experiment?experiment_name={{ results.0.name|escape|urlencode }}">View Plot</a>
+                </nobr>
+            </div>
 
+            <h2 class="experiment-title">{{ results.0.pretty_name|escape }}</h2>
 
-            <table class="table"><tbody><tr>
-            <td>
-                <h2 class="experiment-title">{{ results.0.pretty_name|escape }}</h2>
+            {% if results.0.live %}
+            <p>
+                <strong>Status: </strong>
+                Running {{ results.0.dt_started|timesince }}
+            </p>
+            {% else %}
+            <form action="/gae_bingo/dashboard/control_experiment" method="POST">
+            <input type="hidden" name="experiment_name" value="{{ results.0.name|escape }}"/>
+            <p>
+                <strong>Status: </strong>
+                Ended manually.
+                You can <button type="submit" class="button delete-experiment" value="resume" name="action">resume this experiment</button> or,
+                if your testing code has been removed, 
+                <button type="submit" class="button delete-experiment" value="delete" name="action">delete this experiment</button>
+                from the dashboard.
+            </p>
+            </form>
+            {% endif %}
 
-                {% if results.0.live %}
-                <p>
-                    <strong>Status: </strong>
-                    Running {{ results.0.dt_started|timesince }}
-                </p>
-                {% else %}
-                <form action="/gae_bingo/dashboard/control_experiment" method="POST">
-                <input type="hidden" name="experiment_name" value="{{ results.0.name|escape }}"/>
-                <p>
-                    <strong>Status: </strong>
-                    Ended manually.
-                    You can <button type="submit" class="button delete-experiment" value="resume" name="action">resume this experiment</button> or,
-                    if your testing code has been removed, 
-                    <button type="submit" class="button delete-experiment" value="delete" name="action">delete this experiment</button>
-                    from the dashboard.
-                </p>
-                </form>
-                {% endif %}
-            </td>
-            <td align="right">
-                <form action="/gae_bingo/dashboard/plot_experiment" method="POST">
-                    <input type="hidden" name="experiment_name" value="{{ results.0.name|escape }}"/>
-                    <button type="submit" class="button delete-experiment" name="action" value="choose_alternative">Plot this exepriment</button>
-                </form>
-            </td>
-            </tr></tbody></table>
-            
             <table class="table">
                 <tbody>
                     <tr>

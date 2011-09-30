@@ -13,8 +13,7 @@ class TimeSeries:
         self.snapshots = []
     
 class Timeline(RequestHandler):
-
-    def post(self):
+    def get(self):
 
         experiment_name = self.request.get("experiment_name")
 
@@ -22,9 +21,9 @@ class Timeline(RequestHandler):
             return
 
         bingo_cache = BingoCache.get()
-        experiment_model = bingo_cache.get_experiment(experiment_name)
+        experiment = bingo_cache.get_experiment(experiment_name)
 
-        query = _GAEBingoSnapshotLog.all().ancestor(experiment_model)
+        query = _GAEBingoSnapshotLog.all().ancestor(experiment)
         query.order('-time_recorded')
         experiment_snapshots = query.fetch(1000)
         
@@ -57,7 +56,7 @@ class Timeline(RequestHandler):
         path = os.path.join(os.path.dirname(__file__), "templates/timeline.html")
         self.response.out.write(
             template.render(path, {
-                "experiment_name": experiment_name,
+                "experiment": experiment,
                 "experiment_data": experiment_data,
             })
         )
