@@ -1,44 +1,31 @@
-// a small javascript library for interacting with gae_bingo's blotter
-// requires jquery 1.5+
+// Blotter is a js library for client-side interaction with gae_bingo
+// requires jquery 1.5+ and JSON.stringify
+// TODO... remove that hard JSON dependency
 
 // Example usage
 /*
-
-blot = Blotter()
 // score a conversion
-Blotter.bingo("mario_proficient")
+Blotter.bingo("mario_yay")
+
+// create a new a/b test split 90/10
+Blotter.ab_test("mario points", {"on":90, "off":10}, ["mario_yay", "mario_boo", "mario_indifferent"])
+
 // check user's status in a test
-blot.ab_test("mario points", function(d){console.log(d)})
-// { "mario points" : "on" }
-blot.ab_test()
+Blotter.ab_test("mario points",null,null,function(d){console.log(d)})
+
+// see all tests requested so far
+Blotter.tests 
 // ==> returns { "mario points" : "on" }
-blot.tests 
-// ==> returns { "mario points" : "on" }
 
-// you can specify default callbacks when initializing
-blottie = blotter({success : function(d, ts, jqx){}, error: function(jqx, ts, e){}})
+// you can specify default callbacks
+Blotter.init({success : function(d, ts, jqx){console.log("woo!",d)}, error: function(jqx, ts, e){...}})
 
-// if you're just playing, there are some console-friendly defaults available
-blotto = blotter( { debug : true } )
-
-// if you've installed gae_bingo's blotter in a non-default location, you can set its path as well
-dauber = blotter( { path : "/dauber" } )
-
-// Blotter ( settings )
-// where settings is a key/value pair that takes the following defaults
-## path
-defaults to
-## success
-## error
-{
-  path : "path to gae_bingo/blotter" || 
-  success : function(){},
-  error : function(){}
-)
+// if you're just playing around, there are some console-friendly defaults available
+// which you can access by defining debug as an init parameter
+Blotter.init( { debug : true } )
 
 */
-
-// 
+ 
 var Blotter = (function(){
   var path = "/gae_bingo/blotter";
 
