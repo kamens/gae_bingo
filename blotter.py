@@ -78,6 +78,9 @@ class Blotter(RequestHandler):
   def post(self):
     """post a conversion to blotter by passing { convert : "conversion_name" }
     
+    you cannot currently pass a json list (as the response would be a bit ambiguous)
+    so instead pass multiple calls to post (which is what the js tool does)
+    
     successful conversions return HTTP 204
     
     failed conversions return a 404 (i.e. experiment not found in reverse-lookup)
@@ -100,7 +103,7 @@ class Blotter(RequestHandler):
         # score the conversion
         bingo(conversion)
         return
-      
+    
       else:
         # send error
         self.response.set_status(404)
@@ -109,4 +112,4 @@ class Blotter(RequestHandler):
       # no luck, compadre
       self.response.set_status(400)
       self.response.out.write('"hc svnt dracones"')
-      
+    

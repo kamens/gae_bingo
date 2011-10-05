@@ -1,6 +1,9 @@
 // Blotter is a js library for client-side interaction with gae_bingo
-// requires jquery 1.5+ and JSON.stringify
-// TODO... remove that hard JSON dependency
+// the only hard requirement is jquery 1.5+
+// 
+// because JSON.stringify is still not widely supported, consider including
+// json2.js from https://github.com/douglascrockford/JSON-js 
+// if it's not found, it will ab_test will be read-only.
 
 // Example usage
 /*
@@ -63,9 +66,12 @@ var Blotter = (function(){
     errorCallback = errorCallback || defaultError;
     successCallback = successCallback || defaultSuccess;
 
+    // don't init ab tests on browsers without JSON support
+    var stringify = JSON.stringify || $.noop;
+
     canonicalname = { "canonical_name" : canonical_name };
-    alternativeparams = { "alternative_params" : JSON.stringify(alternative_params) };
-    conversionname = { "conversion_name" : JSON.stringify(conversion_name) };
+    alternativeparams = { "alternative_params" : stringify(alternative_params) };
+    conversionname = { "conversion_name" : stringify(conversion_name) };
     var testdata = $.extend({}, canonicalname, alternativeparams, conversionname);
 
     if (!canonical_name){
@@ -89,16 +95,26 @@ var Blotter = (function(){
     errorCallback = errorCallback || defaultError;
     successCallback = successCallback || defaultSuccess;
 
-    jQuery.ajax({
-      url: path,
-      type : "POST",
-      data : { convert : JSON.stringify(conversion) },
-      success : successCallback,
-      error : errorCallback
-    });
+    var convertIt = function(name){
+      jQuery.ajax({
+        url: path,
+        type : "POST",
+        data : { convert : name },
+        success : successCallback,
+        error : errorCallback
+      });
+    };
+
+    if(typeof conversion === "string"){
+      convertIt('"'+conversion+'"');
+    }else if($.isArray(conversion)){
+      $.each(conversion, function(i,v){
+        convertIt('"'+v+'"');
+      });
+    }
+
+
   };
-
-
 
   return {
     init : init,
@@ -108,3 +124,6 @@ var Blotter = (function(){
   };
   
 })();
+
+
+
