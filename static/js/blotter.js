@@ -40,7 +40,6 @@ defaults to
 
 // 
 var Blotter = (function(){
-  spec = (typeof spec === "undefined") ? {} : spec;
   var path = "/gae_bingo/blotter";
 
   var defaultSuccess = $.noop;
@@ -51,21 +50,23 @@ var Blotter = (function(){
   // init takes a spec object which is totally optional,
   // you can define the following properties on it
   // * path (string) : the path to gae_bingo/blotter
-  // * defaultSuccess (function) : a jQuery ajax succes callback like: 
+  // * success (function) : a jQuery ajax succes callback like: 
   //   function(data, textStatus, jqXHR){ ... }
-  // * defaultError (function) : a jQuery ajax error callback like:
+  // * error (function) : a jQuery ajax error callback like:
   //   function(jqXHR, textStatus, errorThrown){ ... }
   // * debug : if debug is defined, defaultError and defaultSuccess 
   //   are set to console.log/error the result of a query
   var init = function( spec ){
+    spec = (typeof spec === "undefined") ? {} : spec;
+
     path = spec.path || path;
     
     defaultSuccess = (spec.success !== undefined) ? spec.success : defaultSuccess;
     defaultError = (spec.error !== undefined) ? spec.error : defaultError;
-
+    
     // set debugging console-callbacks if spec.debug set
-    defaultSuccess = (spec.debug === undefined) ? defaultSuccess : function(d,ts){console.log("blotter success("+ts+"):",d);};
-    defaultError = (spec.debug === undefined) ? defaultError : function(jx, ts){console.error("blotter error ("+ts+"):",d);};    
+    defaultSuccess = (spec.debug === undefined) ? defaultSuccess : function(d,ts,jx){console.log("blotter success("+jx.status+"):",d);};
+    defaultError = (spec.debug === undefined) ? defaultError : function(jx, ts){console.error("blotter error ("+jx.status+"):",jx);};
   };
 
   // ab_test takes a testName which is the name of a given ab_test
@@ -84,7 +85,7 @@ var Blotter = (function(){
         data : { 
           canonical_name : testName
         },
-        success : function(d, ts, jx){ tests[testName] = d[testName]; successCallback(d,ts,jx);},
+        success : function(d, ts, jx){ tests[testName] = d; successCallback(d,ts,jx);},
         error : errorCallback
       });
      }
@@ -110,6 +111,7 @@ var Blotter = (function(){
 
 
   return {
+    init : init,
     ab_test : ab_test,
     bingo : convert,
     tests : tests
