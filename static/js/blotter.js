@@ -5,6 +5,9 @@
 // json2.js from https://github.com/douglascrockford/JSON-js 
 // if it's not found, it will ab_test will be read-only.
 
+// Blotter is available on the dashboard page if you open a console and want
+// to test it out.
+
 // Example usage
 /*
 // score a conversion
