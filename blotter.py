@@ -15,7 +15,6 @@ class Blotter(RequestHandler):
   GETs allow you to check the user's experiment status from within js while 
   POSTs allow you to score conversions for a given test
   
-  TODO: PUTs should allow you to create new ab tests (ala the default ab_test behavior)
   """
 
   def get(self):
@@ -29,8 +28,10 @@ class Blotter(RequestHandler):
       a return a 400 if the params are passed incorrectly
     """
     experiment_name = self.request.get("canonical_name", "")
-    alternative_params = self.request.get("alternative_params","")
-    conversion_name = self.request.get("conversion_name","")
+    alternative_params = self.request.get("alternative_params", None)
+    conversion_name = self.request.get("conversion_name", None)
+
+    logging.info("alternative_params: %s", alternative_params)
 
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
 
@@ -40,19 +41,18 @@ class Blotter(RequestHandler):
     if(experiment_name is not ""):
       if experiment_name not in bingo_cache.experiments:
         self.response.set_status(404)
-        self.response.out.write("")
         return
       
       # return status for experiment (200 implicit)
       else:
         condition = str(ab_test(experiment_name))
-        self.response.out.write('%s' % (condition))
+        self.response.out.write('"%s"' % (condition))
         return
     
-    # no params passed, sorry dude
     else:
+      # no params passed, sorry broheim
       self.response.set_status(400)
-      self.response.out.write("hc svnt dracones")
+      self.response.out.write('"hc svnt dracones"')
       return
   
 
@@ -62,26 +62,32 @@ class Blotter(RequestHandler):
     
     successful conversions return HTTP 204
     
-    failed conversions return a 400 (i.e. experiment not found in lookup)
+    failed conversions return a 404 (i.e. experiment not found in lookup)
+    
+    no params returns a 400 error ()
     """
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
     
     conversion = self.request.get("convert","")
 
+    self.response.headers['Content-Type'] = 'text/json'
+
     experiment_names = bingo_cache.get_experiment_names_by_conversion_name(conversion)
     logging.info(experiment_names)
-    
-    if(len(experiment_names) > 0):
-      # send null message
-      self.response.set_status(204)
-      # score the conversion
-      bingo(conversion)
-      return
+    if (conversion is not ""):
+      if(len(experiment_names) > 0):
+        # send null message
+        self.response.set_status(204)
+        # score the conversion
+        bingo(conversion)
+        return
       
+      else:
+        # send error
+        self.response.set_status(404)
+        return
     else:
-      # send error
-      self.response.headers['Content-Type'] = 'text/plain'
-      self.response.set_status(400)
       # no luck, compadre
-      self.response.out.write("hc svnt dracones")
-      return
+      self.response.set_status(400)
+      self.response.out.write('"hc svnt dracones"')
+      

@@ -39,19 +39,37 @@ defaults to
 */
 
 // 
-var Blotter = function( spec ){
+var Blotter = (function(){
   spec = (typeof spec === "undefined") ? {} : spec;
-  var path = spec.path || "/gae_bingo/blotter";
+  var path = "/gae_bingo/blotter";
 
-  var defaultSuccess = (spec.success !== undefined) ? spec.success : $.noop;
-  var defaultError = (spec.error !== undefined) ? spec.error : $.noop;
-
-  defaultSuccess = (spec.debug === undefined) ? defaultSuccess : function(d){console.log("blotter success:",d);};
-  defaultError = (spec.debug === undefined) ? defaultError : function(d){console.error("blotter error:",d);};
+  var defaultSuccess = $.noop;
+  var defaultError = $.noop;
 
   var tests = {};
 
+  // init takes a spec object which is totally optional,
+  // you can define the following properties on it
+  // * path (string) : the path to gae_bingo/blotter
+  // * defaultSuccess (function) : a jQuery ajax succes callback like: 
+  //   function(data, textStatus, jqXHR){ ... }
+  // * defaultError (function) : a jQuery ajax error callback like:
+  //   function(jqXHR, textStatus, errorThrown){ ... }
+  // * debug : if debug is defined, defaultError and defaultSuccess 
+  //   are set to console.log/error the result of a query
+  var init = function( spec ){
+    path = spec.path || path;
+    
+    defaultSuccess = (spec.success !== undefined) ? spec.success : defaultSuccess;
+    defaultError = (spec.error !== undefined) ? spec.error : defaultError;
+
+    // set debugging console-callbacks if spec.debug set
+    defaultSuccess = (spec.debug === undefined) ? defaultSuccess : function(d,ts){console.log("blotter success("+ts+"):",d);};
+    defaultError = (spec.debug === undefined) ? defaultError : function(jx, ts){console.error("blotter error ("+ts+"):",d);};    
+  };
+
   // ab_test takes a testName which is the name of a given ab_test
+  // 
   var ab_test = function( testName, successCallback, errorCallback ){
     // set defaults for callbacks
     errorCallback = errorCallback || defaultError;
@@ -97,4 +115,4 @@ var Blotter = function( spec ){
     tests : tests
   };
   
-};
+})();
