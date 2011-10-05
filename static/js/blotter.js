@@ -70,22 +70,25 @@ var Blotter = (function(){
   };
 
   // ab_test takes a testName which is the name of a given ab_test
-  // 
-  var ab_test = function( testName, successCallback, errorCallback ){
+  // alt
+  var ab_test = function( canonical_name, alternative_params, conversion_name, successCallback, errorCallback ){
     // set defaults for callbacks
     errorCallback = errorCallback || defaultError;
     successCallback = successCallback || defaultSuccess;
 
-    if (!testName){
+    canonicalname = { "canonical_name" : canonical_name };
+    alternativeparams = { "alternative_params" : JSON.stringify(alternative_params) };
+    conversionname = { "conversion_name" : JSON.stringify(conversion_name) };
+    var testdata = $.extend({}, canonicalname, alternativeparams, conversionname);
+
+    if (!canonical_name){
       // return all stored tests and values
       return tests;
     }else{
       jQuery.ajax({
         url: path,
-        data : { 
-          canonical_name : testName
-        },
-        success : function(d, ts, jx){ tests[testName] = d; successCallback(d,ts,jx);},
+        data : testdata,
+        success : function(d, ts, jx){ tests[canonical_name] = d; successCallback(d,ts,jx);},
         error : errorCallback
       });
      }
@@ -102,7 +105,7 @@ var Blotter = (function(){
     jQuery.ajax({
       url: path,
       type : "POST",
-      data : { convert : conversion },
+      data : { convert : JSON.stringify(conversion) },
       success : successCallback,
       error : errorCallback
     });
