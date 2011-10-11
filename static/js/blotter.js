@@ -77,12 +77,12 @@ var Blotter = (function() {
     // don't init ab tests on browsers without JSON support
     var stringify = JSON.stringify || $.noop;
 
-    canonicalname = { "canonical_name" : canonical_name };
-    alternativeparams = { "alternative_params" : stringify(alternative_params) };
-    conversionname = { "conversion_name" : stringify(conversion_name) };
+    var testdata = { 
+      "canonical_name" : canonical_name,
+      "alternative_params" : stringify(alternative_params),
+      "conversion_name" : stringify(conversion_name)
+    };
     
-    var testdata = $.extend({}, canonicalname, alternativeparams, conversionname);
-
     if (!canonical_name){
       // return all stored tests and values
       return tests;
