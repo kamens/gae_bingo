@@ -5,15 +5,15 @@ GAE/Bingo is a drop-in split testing framework for App Engine, built for [Khan A
 You can read [more about the initial inspiration and design of
 GAE/Bingo](http://bjk5.com/post/10171483254/a-bingo-split-testing-now-on-app-engine-built-for-khan).
 
-* <a href="#features">Features</a>  
+* <a href="#features">Features</a>
 * <a href="#screens">Experiment Dashboard</a>
 * <a href="#bare">Bare Minimum Example</a>
-* <a href="#usage">Usage and Code Samples</a>  
-* <a href="#principles">Design Principles</a>  
-* <a href="#start">Getting Started</a>  
-* <a href="#non-features">Non-features so far</a>  
-* <a href="#bonus">Bonus</a>  
-* <a href="#faq">FAQ</a>  
+* <a href="#usage">Usage and Code Samples</a>
+* <a href="#principles">Design Principles</a>
+* <a href="#start">Getting Started</a>
+* <a href="#non-features">Non-features so far</a>
+* <a href="#bonus">Bonus</a>
+* <a href="#faq">FAQ</a>
 
 ## <a name="features">Features</a>
 
@@ -32,6 +32,7 @@ Plus some stuff to satisfy Khan Academy's needs:
 * Persistent storage of test results -- if you're running experiments
   that take a long time like, say, [testing your software's effects on a student's education](http://www.khanacademy.org), that's no problem.
 * Performance optimized for App Engine
+* Easy-to-use Javascript API
 
 ## <a name="screens">Experiment Dashboard</a>
 
@@ -112,7 +113,8 @@ following lines of code to return various alternatives for your tests.
 Remember: each individual user will get consistent results from these
 functions.
 
-<pre>from gae_bingo.gae_bingo import ab_test
+```python
+from gae_bingo.gae_bingo import ab_test
 
 ...
 
@@ -147,29 +149,29 @@ answers_required = ab_test("answers required", [10, 15, 20])
 #
 crazy_experiment = ab_test("crazy experiment", {"crazy": 1, "normal": 4})
 
-</pre>
+```
 
 ### <a name="multiple">Analyzing multiple types of results for a single experiment</a>
 You may want to statistically examine different dimensions of an experiment's
 effects. You can do this by passing an array to the conversion_name parameter.
 
-<pre>
-breed_new_animal = ab_test("breed new animal", conversion_name=["animals escaped", "talking animals"])
-</pre>
+```python
+    breed_new_animal = ab_test("breed new animal", conversion_name=["animals escaped", "talking animals"])
+```
 
 This syntactic sugar will automatically create multiple experiments for you.
 Your conversions will be tracked independently with their own statistical
 analysis, so you can independently call bingo() when appropriate:
 
-<pre>
-bingo("animals escaped")
-</pre>
+```python
+    bingo("animals escaped")
+```
 
 ...and...
 
-<pre>
-bingo("talking animals")
-</pre>
+```python
+    bingo("talking animals")
+```
 
 This lets you monitor your experiment's statistical effects on both escaping and talking animals, separately, via the dashboard.
 
@@ -183,8 +185,8 @@ request param, like so: `?gae_bingo_alternative_number=2`
 Typically, ending an experiment will go something like this:
 
 1. You'll check out your dashboard at `/gae_bingo/dashboard`
-1. You'll notice a clear experiment winner and click "End experiment, picking this" on the dashboard. All users will now see your chosen alternative.  
-2. You'll go into the code and remove your old ab_test() call, replacing it w/ the clear winner.  
+1. You'll notice a clear experiment winner and click "End experiment, picking this" on the dashboard. All users will now see your chosen alternative.
+2. You'll go into the code and remove your old ab_test() call, replacing it w/ the clear winner.
 3. You'll delete the experiment from the dashboard if you no longer need its historical record.
 
 ## <a name="principles">Design Principles</a>
@@ -201,57 +203,59 @@ Just go read through [Patrick McKenzie's slides on A/B testing design principles
 1. Download this repository's source and copy the `gae_bingo/` folder into your App Engine project's root directory.
 
 2. Add the following handler definitions (found in `yaml/app.yaml`) to your app's `app.yaml`:
-<pre>
+```yaml
 handlers:
-&ndash; url: /gae_bingo/static
-&nbsp;&nbsp;static_dir: gae_bingo/static<br/>
-&ndash; url: /gae_bingo/tests/.*
-&nbsp;&nbsp;script: gae_bingo/tests/main.py<br/>
-&ndash; url: /gae_bingo/.*
-&nbsp;&nbsp;script: gae_bingo/main.py
-</pre>
+- url: /gae_bingo/static
+  static_dir: gae_bingo/static<br/>
+- url: /gae_bingo/tests/.*
+  script: gae_bingo/tests/main.py<br/>
+- url: /gae_bingo/.*
+  script: gae_bingo/main.py
+```
 ...and the following job definitions (found in `yaml/cron.yaml`) to your app's `cron.yaml`:
-<pre>
+```yaml
 cron:
-&ndash; description: persist gae bingo experiments to datastore
-&nbsp;&nbsp;url: /gae_bingo/persist
-&nbsp;&nbsp;schedule: every 5 minutes
-</pre>
+- description: persist gae bingo experiments to datastore
+  url: /gae_bingo/persist
+  schedule: every 5 minutes
+```
 
 3. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI middleware:
-<pre>
-&#35; Example of existing application
+```python
+# Example of existing application
 application = webapp.WSGIApplication(...existing application...)<br/>
-&#35; Add the following
+# Add the following
 from gae_bingo.middleware import GAEBingoWSGIMiddleware
 application = GAEBingoWSGIMiddleware(application)
-</pre>
+```
 
 4. (Optional, suggested) If you want, modify the contents of config.py to match your application's usage. There
    are two functions to modify: can_control_experiments() and
    current_logged_in_identity()
-<pre>
-\# Customize can_see_experiments however you want to specify
-\# whether or not the currently-logged-in user has access
-\# to the experiment dashboard.
-\#
+```python
+# Customize can_see_experiments however you want to specify
+# whether or not the currently-logged-in user has access
+# to the experiment dashboard.
+#
 def can_control_experiments():
-&nbsp;&nbsp;&nbsp;&nbsp;\# This default implementation will be fine for most
-&nbsp;&nbsp;&nbsp;&nbsp;return users.is_current_user_admin()
-</pre><br/>
-<pre>
-\# Customize current_logged_in_identity to make your a/b sessions
-\# stickier and more persistent per user.
-\#
-\# This should return one of the following:
-\#
-\#   A) a db.Model that identifies the current user, something like models.UserData.current()
-\#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
-\#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
-\#
+    # This default implementation will be fine for most
+    return users.is_current_user_admin()
+```
+
+```python
+# Customize current_logged_in_identity to make your a/b sessions
+# stickier and more persistent per user.
+#
+# This should return one of the following:
+#
+#   A) a db.Model that identifies the current user, something like models.UserData.current()
+#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
+#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
+#
 def current_logged_in_identity():
-&nbsp;&nbsp;&nbsp;&nbsp;return users.get_current_user().user_id() if users.get_current_user() else None
-</pre><br/>
+    return users.get_current_user().user_id() if users.get_current_user() else None
+```
+
 If you want the most consistent A/B results for users who are anonymous and
 then proceed to login to your app, you should have this function return
 a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class UserData(GAEBingoIdentityModel, db.Model):`<br/>
@@ -259,6 +263,47 @@ a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class User
 
 5. You're all set! Start creating and converting A/B tests [as described
    above](#usage).
+
+## <a name="javascript">Javascript API and Client-Side Bingo Parties</a>
+
+GAE/Bingo includes a client-side Javascript API that closely matches the backend calls. 
+You can read more in `static/js/gae_bingo.js` but a brief walkthrough is provided here.
+
+the gae_bingo variable is present on the dashboard page as `window.gae_bingo` or just plain
+`gae_bingo`. In either case, feel free to pop open a console and play around.
+
+```js
+// assuming it exists, score a conversion
+gae_bingo.bingo( "mario_yay" )
+
+// supposing that the above conversion didn't exist, we can creat one if we're a site admin
+// create a new a/b test split 90/10 with three possible conversions
+gae_bingo.ab_test( "mario points", { "on" : 90, "off" : 10 }, [ "mario_yay", "mario_boo", "mario_indifferent" ] )
+
+// check user's status in a test
+gae_bingo.ab_test( "mario points", null, null, function( d ) { console.log( d ); } )
+
+// see all tests requested so far
+gae_bingo.tests
+// ==> returns { "mario points" : "on" }
+
+// you can specify default callbacks
+gae_bingo.init({
+  success : function( d, ts, jqx ) { console.log( "woo!", d ); },
+  error : function( jqx, ts, e ) { console.error( "nuts", jqx )}
+})
+
+// if you're just playing around, there are some console-friendly defaults available
+// which you can access by defining debug as an init parameter
+gae_bingo.init( { "debug" : true } )
+```
+
+GAE/Bingo also includes two endpoints for interacting with GAE/Bingo client-side:
+* `/gae_bingo/blotter/ab_test` and also
+* `/gae_bingo/blotter/bingo`
+
+
+
 
 ## <a name="non-features">Non-features (well, some of them)</a>
 
