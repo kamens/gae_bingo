@@ -36,7 +36,7 @@
 */
  
 var Blotter = (function() {
-  var path = "/gae_bingo/blotter";
+  var path = "/gae_bingo/blotter/";
 
   var defaultSuccess = $.noop;
   var defaultError = $.noop;
@@ -85,7 +85,7 @@ var Blotter = (function() {
 
     jQuery.ajax({
       type: "POST",
-      url: path,
+      url: path + "ab_test",
       data : testdata,
       success : function(d, ts, jx) { 
         tests[canonical_name] = d; 
@@ -105,7 +105,7 @@ var Blotter = (function() {
 
     var post_conversion = function(name){
       jQuery.ajax({
-        url: path,
+        url: path + "bingo",
         type : "POST",
         data : { convert : name },
         success : successCallback,
