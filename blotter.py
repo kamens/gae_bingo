@@ -1,7 +1,13 @@
+"""Blotter is a bingo callback for use from the client side 
+
+GETs allow you to check the user's experiment status from within js while 
+POSTs allow you to score conversions for a given test
+
+"""
 import os
 import logging
 
-from google.appengine.ext.webapp import template, RequestHandler
+from google.appengine.ext.webapp import RequestHandler
 
 from .gae_bingo import bingo, ab_test
 from .cache import bingo_and_identity_cache
@@ -10,29 +16,23 @@ from .config import can_control_experiments
 import simplejson as json
 
 
-class Blotter(RequestHandler):
-    """Blotter is a bingo callback for use from the client side 
+class AB_Test(RequestHandler):
+    """request user alternative/state for an experiment by passing 
+    { canonical_name : "experiment_name" }
     
-    GETs allow you to check the user's experiment status from within js while 
-    POSTs allow you to score conversions for a given test
+    successful requests return 200 and a json object { "experiment_name" : "state" }
+    where state is a jsonified version of the user's state in the experiment
     
+    if a user can_control_experiments, requests may create experiments on the server
+    similar to calling ab_test directly. You should pass in:
+    { "canonical_name": <string>, "alternative_params": <json_obj>, "conversion_name": <json_list>}
+    This will return a 201 and the jsonified state of the user calling ab_test
+    
+    failed requests return 404 if the experiment is not found and
+    return a 400 if the params are passed incorrectly
     """
-
-    def get(self):
-        """request user condition/state for an experiment by passing 
-        { canonical_name : "experiment_name" }
-        
-        successful requests return 200 and a json object { "experiment_name" : "state" }
-        where state is a jsonified version of the user's state in the experiment
-        
-        if a user can_control_experiments, requests may create experiments on the server
-        similar to calling ab_test directly. You should pass in:
-        { "canonical_name": <string>, "alternative_params": <json_obj>, "conversion_name": <json_list>}
-        This will return a 201 and the jsonified state of the user calling ab_test
-        
-        failed requests return 404 if the experiment is not found and
-        return a 400 if the params are passed incorrectly
-        """
+    
+    def post(self):
         
         experiment_name = self.request.get("canonical_name", None)
         alternative_params = self.request.get("alternative_params", None)
@@ -54,10 +54,10 @@ class Blotter(RequestHandler):
                 
                 if can_control_experiments():
                     # create the given ab_test with passed params, etc
-                    condition = ab_test(experiment_name, alternative_params, conversion_name)
+                    alternative = ab_test(experiment_name, alternative_params, conversion_name)
                     logging.info("blotter created ab_test: %s", experiment_name)
                     self.response.set_status(201)
-                    self.response.out.write(json.dumps(condition))
+                    self.response.out.write(json.dumps(alternative))
                     return
                 
                 else:
@@ -67,8 +67,8 @@ class Blotter(RequestHandler):
             
             # return status for experiment (200 implicit)
             else:
-                condition = ab_test(experiment_name)
-                self.response.out.write(json.dumps(condition))
+                alternative = ab_test(experiment_name)
+                self.response.out.write(json.dumps(alternative))
                 return
         
         else:
@@ -79,18 +79,20 @@ class Blotter(RequestHandler):
     
 
 
+class Bingo(RequestHandler):
+    """post a conversion to gae_bingo by passing { convert : "conversion_name" }
+    
+    you cannot currently pass a json list (as the response would be a bit ambiguous)
+    so instead pass multiple calls to post (which is what the js tool does)
+    
+    successful conversions return HTTP 204
+    
+    failed conversions return a 404 (i.e. experiment not found in reverse-lookup)
+    
+    no params returns a 400 error
+    """
+
     def post(self):
-        """post a conversion to blotter by passing { convert : "conversion_name" }
-        
-        you cannot currently pass a json list (as the response would be a bit ambiguous)
-        so instead pass multiple calls to post (which is what the js tool does)
-        
-        successful conversions return HTTP 204
-        
-        failed conversions return a 404 (i.e. experiment not found in reverse-lookup)
-        
-        no params returns a 400 error
-        """
         
         bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
         

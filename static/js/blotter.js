@@ -82,21 +82,17 @@ var Blotter = (function() {
       "alternative_params" : stringify(alternative_params),
       "conversion_name" : stringify(conversion_name)
     };
-    
-    if (!canonical_name){
-      // return all stored tests and values
-      return tests;
-    }else{
-      jQuery.ajax({
-        url: path,
-        data : testdata,
-        success : function(d, ts, jx) { 
-          tests[canonical_name] = d; 
-          successCallback( d, ts, jx);
-        },
-        error : errorCallback
-      });
-    }
+
+    jQuery.ajax({
+      type: "POST",
+      url: path,
+      data : testdata,
+      success : function(d, ts, jx) { 
+        tests[canonical_name] = d; 
+        successCallback( d, ts, jx);
+      },
+      error : errorCallback
+    });
   };
 
   // convert calls a bingo. on success, no data is returned but successCallback is fired anyway
