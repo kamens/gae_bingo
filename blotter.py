@@ -48,35 +48,37 @@ class AB_Test(RequestHandler):
         
         self.response.headers['Content-Type'] = 'text/json'
         
+        status = 200
+        response = None
+        
         if experiment_name:
             
             if experiment_name not in bingo_cache.experiments:
                 
                 if can_control_experiments():
                     # create the given ab_test with passed params, etc
-                    alternative = ab_test(experiment_name, alternative_params, conversion_name)
-                    logging.info("blotter created ab_test: %s", experiment_name)
-                    self.response.set_status(201)
-                    self.response.out.write(json.dumps(alternative))
-                    return
+                    response = ab_test(experiment_name, alternative_params, conversion_name)
+                    status = 201
                 
                 else:
                     # experiment not found (and not being created)
-                    self.response.set_status(404)
-                    return
+                    status = 404
             
             # return status for experiment (200 implicit)
             else:
-                alternative = ab_test(experiment_name)
-                self.response.out.write(json.dumps(alternative))
-                return
+                response = ab_test(experiment_name)
         
         else:
             # no params passed, sorry broheim
-            self.response.set_status(400)
-            self.response.out.write('"hc svnt dracones"')
-            return
-    
+            status = 400
+            response = "hc svnt dracones"
+        
+        
+        self.response.set_status(status)
+        if response:
+            self.response.out.write(json.dumps(response))
+        return
+
 
 
 class Bingo(RequestHandler):
@@ -103,22 +105,28 @@ class Bingo(RequestHandler):
         self.response.headers['Content-Type'] = 'text/json'
 
         experiment_names = bingo_cache.get_experiment_names_by_conversion_name(conversion)
+        
+        status = 200
+        response = None
+        
         if conversion:
             
             if len(experiment_names) > 0:
-                # send null message
-                self.response.set_status(204)
-                # score the conversion
+                # send null message and score the conversion
+                status = 204
                 bingo(conversion)
-                return
             
             else:
                 # send error
-                self.response.set_status(404)
-                return
+                response = 404
         
         else:
             # no luck, compadre
-            self.response.set_status(400)
-            self.response.out.write('"hc svnt dracones"')
-    
+            status = 400
+            response = "hc svnt dracones"
+        
+        self.response.set_status(status)
+        if response:
+            self.response.out.write(json.dumps(response))
+        return
+        
