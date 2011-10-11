@@ -11,6 +11,7 @@ GAE/Bingo](http://bjk5.com/post/10171483254/a-bingo-split-testing-now-on-app-eng
 * <a href="#usage">Usage and Code Samples</a>
 * <a href="#principles">Design Principles</a>
 * <a href="#start">Getting Started</a>
+* <a href="#js-api">Javascript API and Client-Side Bingo Parties</a>
 * <a href="#non-features">Non-features so far</a>
 * <a href="#bonus">Bonus</a>
 * <a href="#faq">FAQ</a>
@@ -269,7 +270,7 @@ a db.Model that inherits from models.GaeBingoIdentityModel. Example: `class User
 5. You're all set! Start creating and converting A/B tests [as described
    above](#usage).
 
-## <a name="javascript">Javascript API and Client-Side Bingo Parties</a>
+## <a name="js-api">Javascript API and Client-Side Bingo Parties</a>
 
 GAE/Bingo includes a client-side Javascript API that closely matches the backend calls. 
 You can read more in `static/js/gae_bingo.js` but a brief walkthrough is provided here.
