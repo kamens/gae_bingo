@@ -156,7 +156,7 @@ You may want to statistically examine different dimensions of an experiment's
 effects. You can do this by passing an array to the conversion_name parameter.
 
 ```python
-    breed_new_animal = ab_test("breed new animal", conversion_name=["animals escaped", "talking animals"])
+breed_new_animal = ab_test("breed new animal", conversion_name=["animals escaped", "talking animals"])
 ```
 
 This syntactic sugar will automatically create multiple experiments for you.
@@ -164,13 +164,13 @@ Your conversions will be tracked independently with their own statistical
 analysis, so you can independently call bingo() when appropriate:
 
 ```python
-    bingo("animals escaped")
+bingo("animals escaped")
 ```
 
 ...and...
 
 ```python
-    bingo("talking animals")
+bingo("talking animals")
 ```
 
 This lets you monitor your experiment's statistical effects on both escaping and talking animals, separately, via the dashboard.
@@ -212,7 +212,9 @@ handlers:
 - url: /gae_bingo/.*
   script: gae_bingo/main.py
 ```
+
 ...and the following job definitions (found in `yaml/cron.yaml`) to your app's `cron.yaml`:
+
 ```yaml
 cron:
 - description: persist gae bingo experiments to datastore
@@ -221,6 +223,7 @@ cron:
 ```
 
 3. Modify the WSGI application you want to A/B test by wrapping it with the gae_bingo WSGI middleware:
+
 ```python
 # Example of existing application
 application = webapp.WSGIApplication(...existing application...)<br/>
@@ -232,26 +235,27 @@ application = GAEBingoWSGIMiddleware(application)
 4. (Optional, suggested) If you want, modify the contents of config.py to match your application's usage. There
    are two functions to modify: can_control_experiments() and
    current_logged_in_identity()
+
 ```python
-# Customize can_see_experiments however you want to specify
-# whether or not the currently-logged-in user has access
-# to the experiment dashboard.
-#
+\# Customize can_see_experiments however you want to specify
+\# whether or not the currently-logged-in user has access
+\# to the experiment dashboard.
+\#
 def can_control_experiments():
     # This default implementation will be fine for most
     return users.is_current_user_admin()
 ```
 
 ```python
-# Customize current_logged_in_identity to make your a/b sessions
-# stickier and more persistent per user.
-#
-# This should return one of the following:
-#
-#   A) a db.Model that identifies the current user, something like models.UserData.current()
-#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
-#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
-#
+\# Customize current_logged_in_identity to make your a/b sessions
+\# stickier and more persistent per user.
+\#
+\# This should return one of the following:
+\#
+\#   A) a db.Model that identifies the current user, something like models.UserData.current()
+\#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
+\#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
+\#
 def current_logged_in_identity():
     return users.get_current_user().user_id() if users.get_current_user() else None
 ```
