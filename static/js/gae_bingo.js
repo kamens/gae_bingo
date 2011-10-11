@@ -51,7 +51,7 @@ var gae_bingo = (function() {
   // * error (function) : a jQuery ajax error callback like:
   //   function(jqXHR, textStatus, errorThrown){ ... }
   // * **debug** : if debug is defined, defaultError and defaultSuccess 
-  //   are set to console.log/error the result of a query
+  //   are overridden (if set) and console.log/error the result of a query
   var init = function( spec ) {
     spec = (typeof spec === "undefined") ? {} : spec;
     
