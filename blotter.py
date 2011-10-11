@@ -33,13 +33,16 @@ class Blotter(RequestHandler):
     failed requests return 404 if the experiment is not found and
     return a 400 if the params are passed incorrectly
     """
+    
     experiment_name = self.request.get("canonical_name", None)
-    alternative_params = self.request.get("alternative_params", default_value = None)
-    if (alternative_params):
+    alternative_params = self.request.get("alternative_params", None)
+    
+    if alternative_params:
       alternative_params = json.loads(alternative_params)
 
-    conversion_name = self.request.get("conversion_name", default_value = None)
-    if (conversion_name):
+    conversion_name = self.request.get("conversion_name", None)
+    
+    if conversion_name:
       conversion_name = json.loads(conversion_name)
 
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
@@ -47,8 +50,10 @@ class Blotter(RequestHandler):
     self.response.headers['Content-Type'] = 'text/json'
 
     # return false if experiment not found (don't create a new one!)
-    if(experiment_name):
+    if experiment_name:
+      
       if experiment_name not in bingo_cache.experiments:
+        
         if can_control_experiments():
           # create the given ab_test with passed params, etc
           condition = ab_test(experiment_name, alternative_params, conversion_name)
@@ -56,6 +61,7 @@ class Blotter(RequestHandler):
           self.response.set_status(201)
           self.response.out.write(json.dumps(condition))
           return
+        
         else:
           # experiment not found (and not being created)
           self.response.set_status(404)
@@ -87,29 +93,32 @@ class Blotter(RequestHandler):
     
     no params returns a 400 error
     """
+    
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
     
     conversion = self.request.get("convert", None)
-    if(conversion):
+    if conversion:
       conversion = json.loads(conversion)
 
     self.response.headers['Content-Type'] = 'text/json'
 
     experiment_names = bingo_cache.get_experiment_names_by_conversion_name(conversion)
-    if (conversion):
-      if(len(experiment_names) > 0):
+    if conversion:
+      
+      if len(experiment_names) > 0:
         # send null message
         self.response.set_status(204)
         # score the conversion
         bingo(conversion)
         return
-    
+      
       else:
         # send error
         self.response.set_status(404)
         return
+    
     else:
       # no luck, compadre
       self.response.set_status(400)
       self.response.out.write('"hc svnt dracones"')
-    
+  
