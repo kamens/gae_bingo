@@ -46,7 +46,7 @@ class AB_Test(RequestHandler):
         if alternative_params:
             alternative_params = json.loads(alternative_params)
         
-        bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
+        bingo_cache = BingoCache.get()
         conversion_name = self.request.get("conversion_name", None)
         
         if conversion_name:
@@ -102,7 +102,7 @@ class Bingo(RequestHandler):
 
     def post(self):
         
-        bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
+        bingo_cache = BingoCache.get()
         
         conversion = self.request.get("convert", None)
         if conversion:
