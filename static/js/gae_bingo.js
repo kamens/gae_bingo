@@ -45,12 +45,12 @@ var gae_bingo = (function() {
 
   // init takes a spec object which is totally optional,
   // you can define the following properties on it
-  // * path (string) : the path to gae_bingo/blotter
-  // * success (function) : a jQuery ajax succes callback like:
+  // * **path** (string) : the path to gae_bingo/blotter
+  // * **success** (function) : a jQuery ajax succes callback like:
   //   function(data, textStatus, jqXHR){ ... }
   // * error (function) : a jQuery ajax error callback like:
   //   function(jqXHR, textStatus, errorThrown){ ... }
-  // * debug : if debug is defined, defaultError and defaultSuccess 
+  // * **debug** : if debug is defined, defaultError and defaultSuccess 
   //   are set to console.log/error the result of a query
   var init = function( spec ) {
     spec = (typeof spec === "undefined") ? {} : spec;
@@ -62,13 +62,21 @@ var gae_bingo = (function() {
     
     // set debugging console-callbacks if spec.debug set
     defaultSuccess = (spec.debug === undefined) ? defaultSuccess :
-      function( d, ts, jx) { console.log( "blotter success(" + jx.status + "):", d ); };
+      function( d, ts, jx) { console.log( "gae_bingo success(" + jx.status + "):", d ); };
     defaultError = (spec.debug === undefined) ? defaultError :
-      function( jx, ts ) { console.error( "blotter error (" + jx.status + "):", jx ); };
+      function( jx, ts ) { console.error( "gae_bingo error (" + jx.status + "):", jx ); };
   };
 
-  // ab_test takes a testName which is the name of a given ab_test
-  // alt
+  // ab_test takes a canonical_name which is the name of a given ab_test
+  // if you are a dev, this will create the test and return the 'alternative' you are in (a or b)
+  // by default this will be `true` or `false` if no `alternative_params` are passed.
+  // * **alternative_params** (Object | Array) can be a list (in which case all list items will 
+  //   be distributed equally) or it can be an object like {"in_test":15, "not_in_test": 85} 
+  //   which will place 15% of participants in the test and leave 85% out of it.
+  // * **conversion_name** (Array) is a list of possible conversions (i.e. things you can bingo)
+  // * **successCallback** (function) overrides any success callback previously defined 
+  //   (or sets one for this invocation) takes the standard JQuery success params (see gae_bingo.init)
+  // * **errorCallback** (function) same as successCallback, see above
   var ab_test = function( canonical_name, alternative_params, conversion_name, successCallback, errorCallback ) {
     // set defaults for callbacks
     errorCallback = errorCallback || defaultError;
