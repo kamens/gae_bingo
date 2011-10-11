@@ -103,9 +103,12 @@ var gae_bingo = (function() {
     });
   };
 
-  // convert calls a bingo. on success, no data is returned but successCallback is fired anyway
-  // on failure (no experiment found for conversion name) errorCallback is fired
-  // successCallback is called even if a bingo has already been recorded for a given conversion
+  // convert triggers a bingo. 
+  // **conversion** may be either the ab_test name or a specific conversion that was
+  //   created when the ab_test was initialized
+  // on success, no data is returned but `successCallback` is fired anyway
+  // on failure (no experiment found for conversion name) `errorCallback` is fired
+  // n.b. `successCallback` is called even if a bingo has already been recorded for a given conversion
   var convert = function( conversion, successCallback, errorCallback ) {
     // set defaults for callbacks
     errorCallback = errorCallback || defaultError;
