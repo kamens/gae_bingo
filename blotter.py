@@ -25,7 +25,13 @@ class AB_Test(RequestHandler):
     
     if a user can_control_experiments, requests may create experiments on the server
     similar to calling ab_test directly. You should pass in:
-    { "canonical_name": <string>, "alternative_params": <json_obj>, "conversion_name": <json_list>}
+        { 
+            "canonical_name": <string>,
+            "alternative_params": <json_obj | json_list>,
+            "conversion_name": <json_list>
+        }
+    *q.v. gae_bingo.ab_test*
+    
     This will return a 201 and the jsonified state of the user calling ab_test
     
     failed requests return 404 if the experiment is not found and
