@@ -1,41 +1,41 @@
-// Blotter is a js library for client-side interaction with gae_bingo
+// gae_bingo is a js library for client-side interaction with gae_bingo
 // the only hard requirement is jquery 1.5+
 // 
 // because JSON.stringify is still not widely supported, consider including
 // json2.js from https://github.com/douglascrockford/JSON-js 
 // if it's not found, it will ab_test will be read-only.
 
-// Blotter is available on the dashboard page if you open a console and want
+// gae_bingo is available on the dashboard page if you open a console and want
 // to test it out.
 
 // Example usage
 /*
     // score a conversion
-    Blotter.bingo( "mario_yay" )
+    gae_bingo.bingo( "mario_yay" )
 
     // create a new a/b test split 90/10 with three possible conversions
-    Blotter.ab_test( "mario points", { "on" : 90, "off" : 10 }, [ "mario_yay", "mario_boo", "mario_indifferent" ] )
+    gae_bingo.ab_test( "mario points", { "on" : 90, "off" : 10 }, [ "mario_yay", "mario_boo", "mario_indifferent" ] )
 
     // check user's status in a test
-    Blotter.ab_test( "mario points", null, null, function( d ) { console.log( d ); } )
+    gae_bingo.ab_test( "mario points", null, null, function( d ) { console.log( d ); } )
 
     // see all tests requested so far
-    Blotter.tests
+    gae_bingo.tests
     // ==> returns { "mario points" : "on" }
 
     // you can specify default callbacks
-    Blotter.init({
+    gae_bingo.init({
       success : function( d, ts, jqx ) { console.log( "woo!", d ); },
       error : function( jqx, ts, e ) { console.error( "nuts", jqx )}
     })
 
     // if you're just playing around, there are some console-friendly defaults available
     // which you can access by defining debug as an init parameter
-    Blotter.init( { "debug" : true } )
+    gae_bingo.init( { "debug" : true } )
 
 */
  
-var Blotter = (function() {
+var gae_bingo = (function() {
   var path = "/gae_bingo/blotter/";
 
   var defaultSuccess = $.noop;
@@ -113,12 +113,12 @@ var Blotter = (function() {
       });
     };
 
-    if( typeof conversion === "string" ) {
-      post_conversion( '"'+conversion+'"' );
-    }else if( $.isArray( conversion ) ) {
+    if( $.isArray( conversion ) ) {
       $.each( conversion, function( i, v ) {
         post_conversion('"'+v+'"');
       });
+    }else if( typeof conversion === "string" ) {
+      post_conversion( '"'+conversion+'"' );
     }
 
 
