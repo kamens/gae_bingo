@@ -10,8 +10,7 @@ import logging
 from google.appengine.ext.webapp import RequestHandler
 
 from .gae_bingo import bingo, ab_test
-from .cache import bingo_and_identity_cache
-from .stats import describe_result_in_words
+from .cache import BingoCache
 from .config import can_control_experiments
 import simplejson as json
 
