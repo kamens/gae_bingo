@@ -203,6 +203,7 @@ Just go read through [Patrick McKenzie's slides on A/B testing design principles
 1. Download this repository's source and copy the `gae_bingo/` folder into your App Engine project's root directory.
 
 2. Add the following handler definitions (found in `yaml/app.yaml`) to your app's `app.yaml`:
+
 ```yaml
 handlers:
 - url: /gae_bingo/static
@@ -237,25 +238,25 @@ application = GAEBingoWSGIMiddleware(application)
    current_logged_in_identity()
 
 ```python
-\# Customize can_see_experiments however you want to specify
-\# whether or not the currently-logged-in user has access
-\# to the experiment dashboard.
-\#
+# Customize can_see_experiments however you want to specify
+# whether or not the currently-logged-in user has access
+# to the experiment dashboard.
+#
 def can_control_experiments():
     # This default implementation will be fine for most
     return users.is_current_user_admin()
 ```
 
 ```python
-\# Customize current_logged_in_identity to make your a/b sessions
-\# stickier and more persistent per user.
-\#
-\# This should return one of the following:
-\#
-\#   A) a db.Model that identifies the current user, something like models.UserData.current()
-\#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
-\#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
-\#
+# Customize current_logged_in_identity to make your a/b sessions
+# stickier and more persistent per user.
+#
+# This should return one of the following:
+#
+#   A) a db.Model that identifies the current user, something like models.UserData.current()
+#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
+#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
+#
 def current_logged_in_identity():
     return users.get_current_user().user_id() if users.get_current_user() else None
 ```
