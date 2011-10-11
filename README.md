@@ -304,27 +304,31 @@ gae_bingo.init( { "debug" : true } )
 ```
 
 GAE/Bingo also includes two endpoints for interacting with GAE/Bingo client-side:
+
 * `/gae_bingo/blotter/ab_test` and also
 * `/gae_bingo/blotter/bingo`
 
-both you should POST to
+Both endpoints you should POST to
 
 ### /gae_bingo/blotter/ab_test
 
-request user alternative/state for an experiment by passing 
-    { canonical_name : "experiment_name" }
-  
+request user alternative/state for an experiment by passing `{ canonical_name : "experiment_name" }`
+
 successful requests return 200 and a json object `{ "experiment_name" : "state" }`
 where state is a jsonified version of the user's state in the experiment
-  
+
 if a user can_control_experiments, requests may create experiments on the server
 similar to calling ab_test directly. You should pass in:
+
+```js
     { 
         "canonical_name": <string>,
         "alternative_params": <json_obj | json_list>,
         "conversion_name": <json_list>
     }
-*q.v. gae_bingo.ab_test*
+```
+
+*for the behavior of ab_test when passing interesting parameters, see gae_bingo.ab_test*
 
 * Good requests return a 201 and the jsonified alternative of the user calling ab_test
 * Failed requests return 404 if the experiment is not found and
