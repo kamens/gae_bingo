@@ -118,7 +118,7 @@ class Bingo(RequestHandler):
             
             else:
                 # send error
-                response = 404
+                status = 404
         
         else:
             # no luck, compadre
