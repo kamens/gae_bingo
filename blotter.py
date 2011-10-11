@@ -7,7 +7,7 @@ from .gae_bingo import bingo, ab_test
 from .cache import bingo_and_identity_cache
 from .stats import describe_result_in_words
 from .config import can_control_experiments
-from django.utils import simplejson as json
+import simplejson as json
 
 
 class Blotter(RequestHandler):
