@@ -3,7 +3,7 @@
 // 
 // because JSON.stringify is still not widely supported, consider including
 // json2.js from https://github.com/douglascrockford/JSON-js 
-// if it's not found, it will ab_test will be read-only.
+// *if window.JSON is not found, gae_bingo will silently do nothing.*
 
 // gae_bingo is available on the dashboard page if you open a console and want
 // to test it out.
@@ -83,7 +83,7 @@ var gae_bingo = (function() {
     successCallback = successCallback || defaultSuccess;
 
     // don't init ab tests on browsers without JSON support
-    var stringify = JSON.stringify || $.noop;
+    var stringify = window.JSON.stringify || $.noop;
 
     var testdata = { 
       "canonical_name" : canonical_name,
@@ -110,6 +110,8 @@ var gae_bingo = (function() {
     // set defaults for callbacks
     errorCallback = errorCallback || defaultError;
     successCallback = successCallback || defaultSuccess;
+    
+    var stringify = window.JSON.stringify || $.noop;
 
     var post_conversion = function(name){
       jQuery.ajax({
@@ -120,13 +122,14 @@ var gae_bingo = (function() {
         error : errorCallback
       });
     };
+    
 
     if( $.isArray( conversion ) ) {
       $.each( conversion, function( i, v ) {
-        post_conversion('"'+v+'"');
+        post_conversion( stringify( v ) );
       });
-    }else if( typeof conversion === "string" ) {
-      post_conversion( '"'+conversion+'"' );
+    } else {
+      post_conversion( stringify( conversion ) );
     }
 
 
@@ -134,8 +137,8 @@ var gae_bingo = (function() {
 
   return {
     init : init,
-    ab_test : ab_test,
-    bingo : convert,
+    ab_test : window.JSON ? ab_test : $.noop,
+    bingo : window.JSON ? convert : $.noop,
     tests : tests
   };
   
