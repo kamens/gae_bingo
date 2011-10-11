@@ -306,7 +306,38 @@ GAE/Bingo also includes two endpoints for interacting with GAE/Bingo client-side
 * `/gae_bingo/blotter/ab_test` and also
 * `/gae_bingo/blotter/bingo`
 
+both you should POST to
 
+### /gae_bingo/blotter/ab_test
+
+request user alternative/state for an experiment by passing 
+    { canonical_name : "experiment_name" }
+  
+successful requests return 200 and a json object `{ "experiment_name" : "state" }`
+where state is a jsonified version of the user's state in the experiment
+  
+if a user can_control_experiments, requests may create experiments on the server
+similar to calling ab_test directly. You should pass in:
+    { 
+        "canonical_name": <string>,
+        "alternative_params": <json_obj | json_list>,
+        "conversion_name": <json_list>
+    }
+*q.v. gae_bingo.ab_test*
+
+* Good requests return a 201 and the jsonified alternative of the user calling ab_test
+* Failed requests return 404 if the experiment is not found and
+* a 400 is returned if the params are passed incorrectly
+
+### /gae_bingo/blotter/bingo
+post a conversion to gae_bingo by passing `{ convert : "conversion_name" }`
+
+you cannot currently pass a json list (as the response would be a bit ambiguous)
+so instead pass multiple calls to POST (which is what the js api does)
+
+* A successful conversions return HTTP 204
+* A failed conversions return a 404 (i.e. experiment not found in reverse-lookup)
+* No params returns a 400 error
 
 
 ## <a name="non-features">Non-features (well, some of them)</a>
