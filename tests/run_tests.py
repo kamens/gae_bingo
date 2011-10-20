@@ -155,8 +155,11 @@ def run_tests():
     # Test an experiment with a Counting type conversion by converting multiple times for a single user
     assert(test_response("participate_in_hippos") in [True, False])
     for i in range(0, 5):
-        assert(test_response("convert_in", {"conversion_name": "hippos"}, use_last_cookies=True) == True)
+        assert(test_response("convert_in", {"conversion_name": "hippos_binary"}, use_last_cookies=True) == True)
+        assert(test_response("convert_in", {"conversion_name": "hippos_counting"}, use_last_cookies=True) == True)
     dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "hippos"})
+    assert(1 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
+    dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "hippos (2)"})
     assert(5 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
     
     # Participate in experiment D (weight alternatives), keeping track of alternative returned count.
@@ -179,14 +182,14 @@ def run_tests():
     assert(dict_alternatives.get("b", 0) < dict_alternatives.get("c", 0))
     
     # Check experiments count
-    assert(test_response("count_experiments") == 6)
+    assert(test_response("count_experiments") == 7)
 
     # Test persist and load from DS
     assert(test_response("persist") == True)
     assert(test_response("flush_memcache") == True)
 
     # Check experiments and converion counts remain after persist and memcache flush
-    assert(test_response("count_experiments") == 6)
+    assert(test_response("count_experiments") == 7)
 
     dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "chimpanzees (2)"})
     assert(expected_conversions == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))

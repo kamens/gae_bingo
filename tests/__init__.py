@@ -82,7 +82,7 @@ class RunStep(RequestHandler):
     
     def participate_in_hippos(self):
         # Multiple conversions test
-        return ab_test("hippos", conversion_type=ConversionTypes.Counting)
+        return ab_test("hippos", conversion_name=["hippos_binary", "hippos_counting"], conversion_type=[ConversionTypes.Binary, ConversionTypes.Counting])
 
     def convert_in(self):
         bingo(self.request.get("conversion_name"))

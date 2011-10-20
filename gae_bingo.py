@@ -46,8 +46,13 @@ def ab_test(canonical_name, alternative_params = None, conversion_name = None, c
                 # Handle multiple conversions for a single experiment by just quietly
                 # creating multiple experiments for each conversion
                 conversion_names = conversion_name if type(conversion_name) == list else [conversion_name]
+                conversion_types = conversion_type if type(conversion_type) == list else [conversion_type] * len(conversion_names)
 
-                for i, conversion_name in enumerate(conversion_names):
+                if len(conversion_names) != len(conversion_types):
+                    # we were called improperly with mismatched lists lengths.. default everything to Binary
+                    conversion_types = [ConversionTypes.Binary] * len(conversion_names)
+
+                for i, (conversion_name, conversion_type) in enumerate(zip(conversion_names,conversion_types)):
                     unique_experiment_name = canonical_name if i == 0 else "%s (%s)" % (canonical_name, i + 1)
 
                     exp, alts = create_experiment_and_alternatives(
