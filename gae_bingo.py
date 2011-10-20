@@ -7,10 +7,10 @@ import time
 from google.appengine.api import memcache
 
 from .cache import BingoCache, bingo_and_identity_cache
-from .models import create_experiment_and_alternatives
+from .models import create_experiment_and_alternatives, ConversionTypes
 from .identity import identity
 
-def ab_test(canonical_name, alternative_params = None, conversion_name = None):
+def ab_test(canonical_name, alternative_params = None, conversion_name = None, conversion_type = ConversionTypes.Binary):
 
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
 
@@ -54,7 +54,8 @@ def ab_test(canonical_name, alternative_params = None, conversion_name = None):
                                     unique_experiment_name,
                                     canonical_name,
                                     alternative_params, 
-                                    conversion_name
+                                    conversion_name,
+                                    conversion_type
                                     )
 
                     bingo_cache.add_experiment(exp, alts)
@@ -131,13 +132,13 @@ def score_conversion(experiment_name, canonical_name):
     if experiment_name not in bingo_identity_cache.participating_tests:
         return
 
-    if experiment_name in bingo_identity_cache.converted_tests:
-        return
-
     experiment = bingo_cache.get_experiment(experiment_name)
 
     if not experiment or not experiment.live:
         # Don't count conversions for short-circuited experiments that are no longer live
+        return
+
+    if experiment_name in bingo_identity_cache.converted_tests and experiment.conversion_type!=ConversionTypes.Counting:
         return
 
     alternative = find_alternative_for_user(canonical_name, bingo_cache.get_alternatives(experiment_name))

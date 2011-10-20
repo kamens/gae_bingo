@@ -14,11 +14,21 @@ from google.appengine.api import memcache
 class GAEBingoIdentityModel(db.Model):
     gae_bingo_identity = db.StringProperty()
 
+class ConversionTypes():
+    Binary = "binary"
+    Counting = "counting"
+    @staticmethod
+    def get_all_as_list():
+        return [ConversionTypes.Binary, ConversionTypes.Counting]
+    def __setattr__(self, attr, value):
+        pass
+
 class _GAEBingoExperiment(db.Model):
     name = db.StringProperty()
     # Not necessarily unique. Experiments "monkeys" and "monkeys (2)" both have canonical_name "monkeys"
     canonical_name = db.StringProperty()
     conversion_name = db.StringProperty()
+    conversion_type = db.StringProperty(default=ConversionTypes.Binary, choices=set(ConversionTypes.get_all_as_list()))
     live = db.BooleanProperty(default = True)
     dt_started = db.DateTimeProperty(auto_now_add = True)
     short_circuit_pickled_content = db.BlobProperty()
@@ -68,7 +78,10 @@ class _GAEBingoAlternative(db.Model):
 
     @property
     def pretty_conversion_rate(self):
-        return "%4.2f%%" % (self.conversion_rate * 100)
+        if self.conversion_rate > 1.0:
+            return "%.2f/participant" % (self.conversion_rate)
+        else:
+            return "%4.2f%%" % (self.conversion_rate * 100)
 
     def key_for_self(self):
         return _GAEBingoAlternative.key_for_experiment_name_and_number(self.experiment_name, self.number)
@@ -119,7 +132,7 @@ class _GAEBingoIdentityRecord(db.Model):
 
         return None
 
-def create_experiment_and_alternatives(experiment_name, canonical_name, alternative_params = None, conversion_name = None):
+def create_experiment_and_alternatives(experiment_name, canonical_name, alternative_params = None, conversion_name = None, conversion_type = ConversionTypes.Binary):
 
     if not experiment_name:
         raise Exception("gae_bingo experiments must be named.")
@@ -135,6 +148,7 @@ def create_experiment_and_alternatives(experiment_name, canonical_name, alternat
                 name = experiment_name,
                 canonical_name = canonical_name,
                 conversion_name = conversion_name,
+                conversion_type = conversion_type,
                 live = True,
             )
 
