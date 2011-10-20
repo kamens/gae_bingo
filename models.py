@@ -78,10 +78,7 @@ class _GAEBingoAlternative(db.Model):
 
     @property
     def pretty_conversion_rate(self):
-        if self.conversion_rate > 1.0:
-            return "%.2f/participant" % (self.conversion_rate)
-        else:
-            return "%4.2f%%" % (self.conversion_rate * 100)
+        return "%4.2f%%" % (self.conversion_rate * 100)
 
     def key_for_self(self):
         return _GAEBingoAlternative.key_for_experiment_name_and_number(self.experiment_name, self.number)
