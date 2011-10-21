@@ -9,6 +9,7 @@ from gae_bingo.gae_bingo import ab_test, bingo, choose_alternative
 from gae_bingo.cache import BingoCache, BingoIdentityCache
 from gae_bingo.config import can_control_experiments
 from gae_bingo.dashboard import ControlExperiment
+from gae_bingo.models import ConversionTypes
 
 # See gae_bingo/tests/run_tests.py for the full explanation/sequence of these tests
 
@@ -34,6 +35,8 @@ class RunStep(RequestHandler):
             v = self.participate_in_chimpanzees()
         elif step == "participate_in_crocodiles":
             v = self.participate_in_crocodiles()
+        elif step == "participate_in_hippos":
+            v = self.participate_in_hippos()
         elif step == "convert_in":
             v = self.convert_in()
         elif step == "count_participants_in":
@@ -76,6 +79,10 @@ class RunStep(RequestHandler):
     def participate_in_crocodiles(self):
         # Weighted test
         return ab_test("crocodiles", {"a": 100, "b": 200, "c": 400})
+    
+    def participate_in_hippos(self):
+        # Multiple conversions test
+        return ab_test("hippos", conversion_name=["hippos_binary", "hippos_counting"], conversion_type=[ConversionTypes.Binary, ConversionTypes.Counting])
 
     def convert_in(self):
         bingo(self.request.get("conversion_name"))

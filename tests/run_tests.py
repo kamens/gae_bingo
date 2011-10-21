@@ -37,7 +37,7 @@ def run_tests():
 
     # Refresh bot's identity record so it doesn't pollute tests
     assert(test_response("refresh_identity_record", bot=True) == True)
-
+    
     # Participate in experiment A, check for correct alternative values being returned,
     for i in range(0, 20):
         assert(test_response("participate_in_monkeys") in [True, False])
@@ -102,6 +102,7 @@ def run_tests():
     for key in dict_conversions:
         assert(dict_conversions[str(key).lower()] == dict_conversions_server[str(key).lower()])
 
+    
     # Participate in experiment B, using cookies to maintain identity
     # and making sure alternatives for B are stable per identity
     last_response = None
@@ -136,6 +137,13 @@ def run_tests():
     # Make sure conversions for the 1st conversion type of this experiment are empty
     dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "chimpanzees"})
     assert(0 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
+
+    # Test that calling bingo multiple times for a signle user creates only one conversion (for a BINARY conversion type)
+    assert(test_response("participate_in_chimpanzees") in [True, False])
+    assert(test_response("convert_in", {"conversion_name": "chimps_conversion_1"}, use_last_cookies=True) == True) 
+    assert(test_response("convert_in", {"conversion_name": "chimps_conversion_1"}, use_last_cookies=True) == True) 
+    dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "chimpanzees"})
+    assert(1 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
     
     # End experiment C, choosing a short-circuit alternative
     test_response("end_and_choose", {"experiment_name": "chimpanzees", "alternative_number": 1})
@@ -144,6 +152,16 @@ def run_tests():
     for i in range(0, 5):
         assert(test_response("participate_in_chimpanzees") == False)
 
+    # Test an experiment with a Counting type conversion by converting multiple times for a single user
+    assert(test_response("participate_in_hippos") in [True, False])
+    for i in range(0, 5):
+        assert(test_response("convert_in", {"conversion_name": "hippos_binary"}, use_last_cookies=True) == True)
+        assert(test_response("convert_in", {"conversion_name": "hippos_counting"}, use_last_cookies=True) == True)
+    dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "hippos"})
+    assert(1 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
+    dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "hippos (2)"})
+    assert(5 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
+    
     # Participate in experiment D (weight alternatives), keeping track of alternative returned count.
     dict_alternatives = {}
     for i in range(0, 75):
@@ -164,14 +182,14 @@ def run_tests():
     assert(dict_alternatives.get("b", 0) < dict_alternatives.get("c", 0))
     
     # Check experiments count
-    assert(test_response("count_experiments") == 5)
+    assert(test_response("count_experiments") == 7)
 
     # Test persist and load from DS
     assert(test_response("persist") == True)
     assert(test_response("flush_memcache") == True)
 
     # Check experiments and converion counts remain after persist and memcache flush
-    assert(test_response("count_experiments") == 5)
+    assert(test_response("count_experiments") == 7)
 
     dict_conversions_server = test_response("count_conversions_in", {"experiment_name": "chimpanzees (2)"})
     assert(expected_conversions == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
