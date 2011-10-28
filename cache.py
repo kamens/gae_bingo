@@ -355,7 +355,10 @@ class BingoIdentityCache(object):
         self.dirty = True
 
     def convert_in(self, experiment_name):
-        self.converted_tests[experiment_name] = 1
+        if experiment_name not in self.converted_tests:
+            self.converted_tests[experiment_name] = 1 
+        else:
+            self.converted_tests[experiment_name] += 1
         self.dirty = True
 
 def bingo_and_identity_cache():

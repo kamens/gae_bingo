@@ -5,7 +5,7 @@ import time
 from google.appengine.ext.webapp import template, RequestHandler
 
 from .cache import BingoCache
-from .models import _GAEBingoSnapshotLog
+from .models import _GAEBingoSnapshotLog, ConversionTypes
 
 class TimeSeries:
     def __init__(self, name):
@@ -22,6 +22,9 @@ class Timeline(RequestHandler):
 
         bingo_cache = BingoCache.get()
         experiment = bingo_cache.get_experiment(experiment_name)
+        
+        y_axis_title = "Average Conversions per Participant" if experiment.conversion_type==ConversionTypes.Counting else "Conversions (%)"
+        y_scale_multiplier = 1.0 if experiment.conversion_type==ConversionTypes.Counting else 100.0
 
         query = _GAEBingoSnapshotLog.all().ancestor(experiment)
         query.order('-time_recorded')
@@ -46,7 +49,7 @@ class Timeline(RequestHandler):
 
             conv_rate = 0.0
             if snapshot.participants > 0:
-                conv_rate = float(snapshot.conversions) / float(snapshot.participants) * 100.0
+                conv_rate = float(snapshot.conversions) / float(snapshot.participants) * y_scale_multiplier
             conv_rate = round(conv_rate, 1)
 
             utc_time = time.mktime(snapshot.time_recorded.timetuple()) * 1000
@@ -57,6 +60,7 @@ class Timeline(RequestHandler):
         self.response.out.write(
             template.render(path, {
                 "experiment": experiment,
+                "y_axis_title": y_axis_title,
                 "experiment_data": experiment_data,
             })
         )
