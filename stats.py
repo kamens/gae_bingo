@@ -31,6 +31,8 @@ def zscore(alternatives):
 
     if frac1 + frac2 == 0:
         return 0
+    elif frac1 + frac2 < 0:
+        raise Exception("At the moment we can't calculate the z score of experiments that allow multiple conversions per participant.")
 
     return numerator / float((frac1 + frac2) ** 0.5)
 
