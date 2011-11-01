@@ -2,13 +2,13 @@ import os
 import logging
 import simplejson
 
-from google.appengine.ext.webapp import template, RequestHandler
+from google.appengine.ext.webapp import RequestHandler
 from google.appengine.api import memcache
 
 from gae_bingo.gae_bingo import ab_test, bingo, choose_alternative
 from gae_bingo.cache import BingoCache, BingoIdentityCache
 from gae_bingo.config import can_control_experiments
-from gae_bingo.dashboard import ControlExperiment
+from gae_bingo.api import ControlExperiment
 from gae_bingo.models import ConversionTypes
 
 # See gae_bingo/tests/run_tests.py for the full explanation/sequence of these tests

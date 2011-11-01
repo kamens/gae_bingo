@@ -180,10 +180,20 @@ def delete_experiment(experiment_name):
     bingo_cache = BingoCache.get()
     experiment = bingo_cache.get_experiment(experiment_name)
 
-    if experiment.live:
-        raise Exception("Cannot delete a live experiment")
+    # Need to delete all experiments that may have been kicked off
+    # by an experiment with multiple conversions
+    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(experiment.canonical_name)
 
-    bingo_cache.delete_experiment_and_alternatives(experiment)
+    if not experiments or not alternative_lists:
+        return
+
+    for i in range(len(experiments)):
+        experiment, alternatives = experiments[i], alternative_lists[i]
+
+        if experiment.live:
+            raise Exception("Cannot delete a live experiment")
+
+        bingo_cache.delete_experiment_and_alternatives(experiment)
 
 def resume_experiment(experiment_name):
 

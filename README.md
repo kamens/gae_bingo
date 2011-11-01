@@ -45,15 +45,14 @@ Your dashboard, available at `/gae_bingo/dashboard`, lets you control all experi
 
 These two lines of code calling the `ab_test` and `bingo` functions are all you need to start A/B testing.
 
-```python
-from gae_bingo.gae_bingo import ab_test, bingo
+<pre>from gae_bingo.gae_bingo import ab_test, bingo
 
 # Start an ab_test, returning True or False
 use_new_button_design = ab_test("new button design"):
 
 #...then, when ready to score a conversion...
 bingo("new button design")
-```
+</pre>
 
 That's it! You're split-testing your users, with consistent behavior per-user, automatic statistical tracking, and more. If you want more power, read on.
 
@@ -71,8 +70,7 @@ This line of code will automatically set up an A/B test named "new button
 design" (the first time only) and return True or False. Use this anywhere
 you can run Python code, it's highly optimized.
 
-```python
-from gae_bingo.gae_bingo import ab_test
+<pre>from gae_bingo.gae_bingo import ab_test
 
 ...
 
@@ -80,17 +78,17 @@ if ab_test("new button design"):
     return "new_button_class"
 else:
     return "old_button_class"
-```
+</pre>
 
 You can also specify an identifier for the conversion metric you're expecting
 to analyze.
 
-```python
+<pre>
 if ab_test("crazy new type of animal", conversion_name="animals escaped"):
     return Gorillas()
 else:
     return Monkeys()
-```
+</pre>
 
 If you don't specify a conversion_name when starting a test, GAE/Bingo will
 automatically listen for conversions with the same name as the experiment.
@@ -99,18 +97,15 @@ automatically listen for conversions with the same name as the experiment.
 This line of code will score a conversion in the "new button design" experiment
 for the current user.
 
-```python
-from gae_bingo.gae_bingo import bingo
+<pre>from gae_bingo.gae_bingo import bingo
 
 ...
 bingo("new button design")
-```
+</pre>
 
 ...or, in the case of the above "crazy new type of animal" experiment,
-
-```python
-bingo("animals escaped")
-```
+<pre>bingo("animals escaped")
+</pre>
 
 ### <a name="specifying">Specifying alternatives</a>
 Even though the above two lines are all you need to start running some pretty

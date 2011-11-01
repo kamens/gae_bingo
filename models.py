@@ -1,4 +1,5 @@
 import pickle
+import datetime
 import logging
 
 from google.appengine.ext import db
@@ -43,6 +44,30 @@ class _GAEBingoExperiment(db.Model):
     @property
     def pretty_name(self):
         return self.name.capitalize().replace("_", " ")
+
+    @property
+    def pretty_canonical_name(self):
+        return self.canonical_name.capitalize().replace("_", " ")
+
+    @property
+    def status(self):
+        if self.live:
+            days_running = (datetime.datetime.now() - self.dt_started).days
+            
+            if days_running < 1:
+                return "Running for less than a day"
+            else:
+                return "Running for %s day%s" % (days_running, ("" if days_running == 1 else "s"))
+
+        else:
+            return "Ended manually"
+
+    @property
+    def y_axis_title(self):
+        if self.conversion_type == ConversionTypes.Counting:
+            "Average Conversions per Participant"
+        else:
+            "Conversions (%)"
 
     @staticmethod
     def key_for_name(name):

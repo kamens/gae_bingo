@@ -14,7 +14,6 @@ from .cache import BingoCache
 from .config import can_control_experiments
 import simplejson as json
 
-
 class AB_Test(RequestHandler):
     """request user alternative/state for an experiment by passing 
     { canonical_name : "experiment_name" }
@@ -31,7 +30,10 @@ class AB_Test(RequestHandler):
         }
     *q.v. gae_bingo.ab_test*
     
-    This will return a 201 and the jsonified state of the user calling ab_test
+    Creating a new experiment will return a 201 and the 
+    jsonified state of the user calling ab_test
+    
+    Simply querying an experiment successfully will return a 200
     
     failed requests return 404 if the experiment is not found and
     return a 400 if the params are passed incorrectly
@@ -80,8 +82,9 @@ class AB_Test(RequestHandler):
         
         
         self.response.set_status(status)
-        if response:
-            self.response.out.write(json.dumps(response))
+        response = json.dumps(response)
+        if response is not 'null':
+            self.response.out.write(response)
         return
 
 

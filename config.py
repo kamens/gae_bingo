@@ -6,8 +6,9 @@ from google.appengine.api import users
 # whether or not the currently-logged-in user has access
 # to the experiment dashboard.
 def can_control_experiments():
-    return users.is_current_user_admin()
-
+    from models import UserData
+    user_data = UserData.current(bust_cache=True)
+    return users.is_current_user_admin() or (user_data and user_data.developer)
 # CUSTOMIZE current_logged_in_identity to make your a/b sessions
 # stickier and more persistent per user.
 #

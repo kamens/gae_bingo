@@ -1,6 +1,10 @@
 <html>
     <head>
         <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js"></script>
+        <script src="/gae_bingo/static/js/mustache.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/gae_bingo/static/js/jQueryMustache.js" type="text/javascript" charset="utf-8"></script>
+        <script src="/gae_bingo/static/js/highcharts.js" type="text/javascript"></script>
+        <script src="/gae_bingo/static/js/dashboard.js" type="text/javascript" charset="utf-8"></script>
         <script src="/gae_bingo/static/js/gae_bingo.js" type="text/javascript" charset="utf-8"></script>
 
         <link rel="stylesheet" href="/gae_bingo/static/css/base.css" type="text/css" media="screen" />
@@ -29,11 +33,38 @@
                 padding: 20px;
                 margin-top: 20px;
             }
+
+            #main div.experiment-container-minimized:hover {
+                cursor: pointer;
+                background: #B8D1E2;
+            }
     
             #main table.table th {
                 width: 20%;
             }
+
+            .experiment-status {
+                float: right;
+                margin-top: 30px;
+            }
+
+            .experiment-controls {
+                float: right;
+                margin-bottom: 30px;
+            }
+
+            .clear {
+                clear: both;
+                height: 1px;
+                overflow: hidden;
+            }
+
+            #progress-bar {
+                margin-top: 40px;
+                text-align: center;
+            }
     
+            #main .resume-experiment,
             #main .delete-experiment {
                 float: none;
                 display: inline;
@@ -48,13 +79,113 @@
             }
         </style>
 
+        <script id="tmpl-experiments" type="x-tmpl-mustache">
+            {{^experiment_results}}
+            <div class="experiment-container block">
+                <h3>No experiments yet.</h3>
+                <p>You really should try experimenting more.</p>
+            </div>
+            {{/experiment_results}}
 
-        {% block head %}
-        {% endblock head %} 
+            {{#experiment_results}}
+
+            <div class="experiment-container experiment-container-minimized block" data-canonical-name="{{canonical_name}}">
+                <div class="experiment-status">
+                    <strong>Status: </strong> {{status}}
+                </div>
+                <h2 class="experiment-title">
+                    {{pretty_canonical_name}}
+                </h2>
+                <div class="experiment-summary-content"></div>
+            </div>
+             
+            {{/experiment_results}}
+        </script>
+
+        <script id="tmpl-experiment-summary" type="x-tmpl-mustache">
+
+            {{^live}}
+            <div class="experiment-controls">
+                <button type="submit" class="button resume-experiment control-experiment" 
+                    data-canonical-name="{{canonical_name}}" data-replace-with="Resuming experiment..." 
+                    value="resume" name="action">Resume this experiment</button>
+                <button type="submit" class="button delete-experiment control-experiment" 
+                    data-canonical-name="{{canonical_name}}"  data-replace-with="Deleting experiment..."
+                    value="delete" name="action">Delete this experiment</button>
+            </div>
+            <div class="clear">&nbsp;</div>
+            {{/live}}
+
+            <div class="secondary-navigation" {{^multiple_experiments}}style="display:none;"{{/multiple_experiments}}>
+                <ul class="wat-cf">
+                {{#experiments}}
+                <li {{#is_first}}class="first"{{/is_first}}><a href="#" data-experiment-name="{{experiment_name}}" class="conversions-link">{{conversion_name}}</a></li>
+                {{/experiments}}
+                </ul>
+            </div>
+
+            <div class="experiment-conversions-content">Loading...</div>
+        </script>
+
+        <script id="tmpl-experiment-conversions-content" type="x-tmpl-mustache">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>&nbsp;</th>
+                        <th>Content</th>
+                        <th>Participants</th>
+                        <th>Conversions</th>
+                        <th>&nbsp;</th>
+                    </tr>
+
+                    {{#alternatives}}
+                    <tr>
+                        <td class="title"><em>Alternative #{{number}}</em></td>
+                        <td>{{content}}</td>
+                        <td>{{participants}}</td>
+                        <td>{{conversions}} ({{pretty_conversion_rate}})</td>
+                        <td>
+                            {{#live}}
+                                <button type="submit" class="button end-experiment control-experiment" name="action" 
+                                    data-alternative-number="{{number}}" data-canonical-name="{{canonical_name}}" data-replace-with="Picking this..."
+                                    value="choose_alternative">End experiment, picking this</button>
+                            {{/live}}
+
+                            {{#is_short_circuited}}
+                            <strong>All users seeing this.</strong>
+                            {{/is_short_circuited}}
+
+                            {{^live}}
+                            &nbsp;
+                            {{/live}}
+                        </td>
+                    </tr>
+                    {{/alternatives}}
+
+                    <tr>
+                        <td class="title"><em>Total</em></td>
+                        <td>&nbsp;</td>
+                        <td>{{total_participants}}</td>
+                        <td>{{total_conversions}}</td>
+                        <td>&nbsp;</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p><strong>Significance Test Results: </strong>{{significance_test_results}}</p>
+
+            <div id="highchart-{{canonical_name}}"></div>
+        </script>
+
     </head>
     <body>
-        {% block body %}
-        {% endblock body %} 
+
+        <div id="main">
+            <div id="header"><h1><a href="/gae_bingo/dashboard">GAE/Bingo Experiments</a></h1></div>
+        </div>
+
+        <div id="progress-bar"><img src="/gae_bingo/static/images/ajax-loader.gif"/></div>
+
     </body>
 </html>
 
