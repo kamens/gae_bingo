@@ -90,7 +90,7 @@ class RunStep(RequestHandler):
 
     def end_and_choose(self):
         bingo_cache = BingoCache.get()
-        choose_alternative(self.request.get("experiment_name"), int(self.request.get("alternative_number")))
+        choose_alternative(self.request.get("canonical_name"), int(self.request.get("alternative_number")))
 
     def count_participants_in(self):
         return reduce(lambda a, b: a + b, 

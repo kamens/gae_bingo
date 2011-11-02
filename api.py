@@ -13,6 +13,10 @@ from .plots import get_experiment_timeline_data
 class Experiments(RequestHandler):
 
     def get(self):
+
+        if not can_control_experiments():
+            return
+
         bingo_cache = BingoCache.get()
 
         experiment_results = {}
@@ -31,6 +35,9 @@ class Experiments(RequestHandler):
 class ExperimentSummary(RequestHandler):
 
     def get(self):
+
+        if not can_control_experiments():
+            return
 
         bingo_cache = BingoCache.get()
         canonical_name = self.request.get("canonical_name")
@@ -71,6 +78,9 @@ class ExperimentSummary(RequestHandler):
 class ExperimentConversions(RequestHandler):
 
     def get(self):
+
+        if not can_control_experiments():
+            return
 
         bingo_cache = BingoCache.get()
         experiment_name = self.request.get("experiment_name")

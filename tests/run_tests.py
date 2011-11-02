@@ -146,7 +146,7 @@ def run_tests():
     assert(1 == reduce(lambda a, b: a + b, map(lambda key: dict_conversions_server[key], dict_conversions_server)))
     
     # End experiment C, choosing a short-circuit alternative
-    test_response("end_and_choose", {"experiment_name": "chimpanzees", "alternative_number": 1})
+    test_response("end_and_choose", {"canonical_name": "chimpanzees", "alternative_number": 1})
 
     # Make sure short-circuited alternatives for C's experiments are set appropriately
     for i in range(0, 5):

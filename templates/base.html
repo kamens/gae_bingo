@@ -53,6 +53,10 @@
                 margin-bottom: 30px;
             }
 
+            .export-csv {
+                text-align: right;
+            }
+
             .clear {
                 clear: both;
                 height: 1px;
@@ -175,6 +179,8 @@
             <p><strong>Significance Test Results: </strong>{{significance_test_results}}</p>
 
             <div id="highchart-{{canonical_name}}"></div>
+
+            <div class="export-csv"><a href="/gae_bingo/dashboard/export?canonical_name={{canonical_name}}">Export as CSV</a></div>
         </script>
 
     </head>

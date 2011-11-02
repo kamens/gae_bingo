@@ -108,7 +108,11 @@ class Bingo(RequestHandler):
         
         conversion = self.request.get("convert", None)
         if conversion:
-            conversion = json.loads(conversion)
+            try:
+                conversion = json.loads(conversion)
+            except json.JSONDecodeError, e:
+                logging.error("json.loads FAILED on input: %s", conversion)
+                raise e
 
         self.response.headers['Content-Type'] = 'text/json'
 

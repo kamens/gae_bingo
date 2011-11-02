@@ -153,14 +153,13 @@ def score_conversion(experiment_name, canonical_name):
 
     bingo_identity_cache.convert_in(experiment_name)
 
-def choose_alternative(experiment_name, alternative_number):
+def choose_alternative(canonical_name, alternative_number):
 
     bingo_cache = BingoCache.get()
-    experiment = bingo_cache.get_experiment(experiment_name)
 
     # Need to end all experiments that may have been kicked off
     # by an experiment with multiple conversions
-    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(experiment.canonical_name)
+    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(canonical_name)
 
     if not experiments or not alternative_lists:
         return
@@ -175,14 +174,13 @@ def choose_alternative(experiment_name, alternative_number):
             experiment.set_short_circuit_content(alternative_chosen[0].content)
             bingo_cache.update_experiment(experiment)
 
-def delete_experiment(experiment_name):
+def delete_experiment(canonical_name):
 
     bingo_cache = BingoCache.get()
-    experiment = bingo_cache.get_experiment(experiment_name)
 
     # Need to delete all experiments that may have been kicked off
     # by an experiment with multiple conversions
-    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(experiment.canonical_name)
+    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(canonical_name)
 
     if not experiments or not alternative_lists:
         return
@@ -195,14 +193,13 @@ def delete_experiment(experiment_name):
 
         bingo_cache.delete_experiment_and_alternatives(experiment)
 
-def resume_experiment(experiment_name):
+def resume_experiment(canonical_name):
 
     bingo_cache = BingoCache.get()
-    experiment = bingo_cache.get_experiment(experiment_name)
 
     # Need to resume all experiments that may have been kicked off
     # by an experiment with multiple conversions
-    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(experiment.canonical_name)
+    experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(canonical_name)
 
     if not experiments or not alternative_lists:
         return
