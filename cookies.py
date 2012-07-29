@@ -36,8 +36,8 @@ def set_cookie_value(key, value='', max_age=None,
         ]:
         if var_value is not None and var_value is not False:
             cookies[key][var_name] = str(var_value)
-        if max_age is not None:
-            cookies[key]['expires'] = max_age
+    if max_age is not None:
+        cookies[key]['expires'] = max_age
 
     cookies_header = cookies[key].output(header='').lstrip()
 

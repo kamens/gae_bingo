@@ -2,19 +2,29 @@ from __future__ import absolute_import
 
 from google.appengine.api import users
 
+# CUSTOMIZE set queue_name to something other than "default"
+# if you'd like to use a non-default task queue.
+QUEUE_NAME = "gae-bingo-queue"
+
 # CUSTOMIZE can_see_experiments however you want to specify
 # whether or not the currently-logged-in user has access
 # to the experiment dashboard.
 def can_control_experiments():
-    from models import UserData
-    user_data = UserData.current(bust_cache=True)
+    # TODO(kamens): we should not need to import here. Unfortunately
+    # importing user_models imports almost our entire codebase, which causes
+    # circular references if any other piece of the codebase then imports
+    # gae_bingo again. When we solve our circular import problem, FIXIT this.
+    import user_models
+
+    user_data = user_models.UserData.current(bust_cache=True)
     return users.is_current_user_admin() or (user_data and user_data.developer)
+
 # CUSTOMIZE current_logged_in_identity to make your a/b sessions
 # stickier and more persistent per user.
 #
 # This should return one of the following:
 #
-#   A) a db.Model that identifies the current user, like models.UserData.current()
+#   A) a db.Model that identifies the current user, like user_models.UserData.current()
 #   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
 #   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
 #
@@ -25,12 +35,28 @@ def can_control_experiments():
 # See docs for details.
 #
 # Examples:
-#   return models.UserData.current()
+#   return user_models.UserData.current()
 #         ...or...
 #   from google.appengine.api import users
 #   return users.get_current_user().user_id() if users.get_current_user() else None
 def current_logged_in_identity():
-    from models import UserData
-    return UserData.current(bust_cache=True)
+    # TODO(kamens): we should not need to import here. Unfortunately
+    # importing user_models imports almost our entire codebase, which causes
+    # circular references if any other piece of the codebase then imports
+    # gae_bingo again. When we solve our circular import problem, FIXIT this.
+    import user_models
 
+    return user_models.UserData.current(bust_cache=True)
+
+# Optionally, you can provide a function that will retrieve the identitiy given a query.
+# If not used, simply return None
+def retrieve_identity(query):
+    # TODO(kamens): we should not need to import here. Unfortunately
+    # importing user_models imports almost our entire codebase, which causes
+    # circular references if any other piece of the codebase then imports
+    # gae_bingo again. When we solve our circular import problem, FIXIT this.
+    import user_models
+
+    user_data = user_models.UserData.get_from_db_key_email(query)
+    return user_data.gae_bingo_identity if user_data else None
 

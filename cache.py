@@ -1,6 +1,4 @@
-import logging
-import pickle
-import random
+import hashlib
 
 from google.appengine.ext import db
 from google.appengine.ext import deferred
@@ -10,6 +8,9 @@ from google.appengine.ext.webapp import RequestHandler
 
 from .models import _GAEBingoExperiment, _GAEBingoAlternative, _GAEBingoIdentityRecord, _GAEBingoSnapshotLog
 from identity import identity
+import request_cache
+from config import QUEUE_NAME
+import pickle_util
 
 # gae_bingo relies on the deferred library,
 # and as such it is susceptible to the same path manipulation weaknesses explained here:
@@ -21,20 +22,10 @@ from identity import identity
 #
 # Example: import config_django
 
-# REQUEST_CACHE is cleared before and after every requests by gae_bingo.middleware.
-# NOTE: this request caching will need a bit of a touchup once Python 2.7 is released for GAE and concurrent requests are enabled.
-REQUEST_CACHE = {}
-
-def flush_request_cache():
-    global REQUEST_CACHE
-    REQUEST_CACHE = {}
-
 def init_request_cache_from_memcache():
-    global REQUEST_CACHE
-
-    if not REQUEST_CACHE.get("loaded_from_memcache"):
-        REQUEST_CACHE = memcache.get_multi([BingoCache.MEMCACHE_KEY, BingoIdentityCache.key_for_identity(identity())])
-        REQUEST_CACHE["loaded_from_memcache"] = True
+    if not request_cache.cache.get("loaded_from_memcache"):
+        request_cache.cache.update(memcache.get_multi([BingoCache.MEMCACHE_KEY, BingoIdentityCache.key_for_identity(identity())]))
+        request_cache.cache["loaded_from_memcache"] = True
 
 class BingoCache(object):
 
@@ -44,13 +35,14 @@ class BingoCache(object):
     def get():
         init_request_cache_from_memcache()
 
-        if not REQUEST_CACHE.get(BingoCache.MEMCACHE_KEY):
-            REQUEST_CACHE[BingoCache.MEMCACHE_KEY] = BingoCache.load_from_datastore()
+        if not request_cache.cache.get(BingoCache.MEMCACHE_KEY):
+            request_cache.cache[BingoCache.MEMCACHE_KEY] = BingoCache.load_from_datastore()
 
-        return REQUEST_CACHE[BingoCache.MEMCACHE_KEY]
+        return request_cache.cache[BingoCache.MEMCACHE_KEY]
 
     def __init__(self):
         self.dirty = False
+        self.storage_disabled = False # True if loading archives that shouldn't be cached
 
         self.experiments = {} # Protobuf version of experiments for extremely fast (de)serialization
         self.experiment_models = {} # Deserialized experiment models
@@ -62,9 +54,8 @@ class BingoCache(object):
         self.experiment_names_by_canonical_name = {} # Mapping of canonical names to experiment names
 
     def store_if_dirty(self):
-
         # Only write to memcache if a change has been made
-        if not self.dirty:
+        if getattr(self, "storage_disabled", False) or not self.dirty:
             return
 
         # Wipe out deserialized models before serialization for speed
@@ -77,20 +68,38 @@ class BingoCache(object):
         memcache.set(BingoCache.MEMCACHE_KEY, self)
 
     def persist_to_datastore(self):
+        """ Persist current state of experiment and alternative models to
+        datastore. Their sums might be slightly out-of-date during any
+        given persist, but not by much.
 
-        # Persist current state of experiment and alternative models to datastore.
-        # Their sums might be slightly out-of-date during any given persist, but not by much.
+        """
+        experiments_to_put = []
         for experiment_name in self.experiments:
             experiment_model = self.get_experiment(experiment_name)
             if experiment_model:
-                experiment_model.put()
+                experiments_to_put.append(experiment_model)
 
+        alternatives_to_put = []
         for experiment_name in self.alternatives:
             alternative_models = self.get_alternatives(experiment_name)
             for alternative_model in alternative_models:
                 # When persisting to datastore, we want to store the most recent value we've got
                 alternative_model.load_latest_counts()
-                alternative_model.put()
+                alternatives_to_put.append(alternative_model)
+                self.update_alternative(alternative_model)
+
+        # When periodically persisting to datastore, first make sure memcache
+        # has relatively up-to-date participant/conversion counts for each
+        # alternative.
+        self.dirty = True
+        self.store_if_dirty()
+
+        # Once memcache is done, put both experiments and alternatives.
+        async_experiments = db.put_async(experiments_to_put)
+        async_alternatives = db.put_async(alternatives_to_put)
+
+        async_experiments.get_result()
+        async_alternatives.get_result()
 
     def log_cache_snapshot(self):
 
@@ -111,29 +120,38 @@ class BingoCache(object):
         alternative_models = self.get_alternatives(experiment_model.name)
         for alternative_model in alternative_models:
             # When logging, we want to store the most recent value we've got
-            alternative_model.load_latest_counts()
-            log_entry = _GAEBingoSnapshotLog(parent=experiment_model, alternative_number=alternative_model.number, conversions=alternative_model.conversions, participants=alternative_model.participants)
+            log_entry = _GAEBingoSnapshotLog(parent=experiment_model, alternative_number=alternative_model.number, conversions=alternative_model.latest_conversions_count(), participants=alternative_model.latest_participants_count())
             log_entries.append(log_entry)
 
         return log_entries
     
     @staticmethod
-    def load_from_datastore():
+    def load_from_datastore(archives=False):
+        """Load BingoCache from the datastore, using archives if specified."""
 
-        # This shouldn't happen often (should only happen when memcache has been completely evicted),
-        # but we still want to be as fast as possible.
+        # This shouldn't happen often (should only happen when memcache has
+        # been completely evicted), but we still want to be as fast as
+        # possible.
 
         bingo_cache = BingoCache()
+
+        if archives:
+            # Disable cache writes if loading from archives
+            bingo_cache.storage_disabled = True
 
         experiment_dict = {}
         alternatives_dict = {}
 
         # Kick both of these off w/ run() so they'll prefetch asynchronously
-        experiments = _GAEBingoExperiment.all().run()
-        alternatives = _GAEBingoAlternative.all().order("number").run()
+        experiments = _GAEBingoExperiment.all().filter(
+                "archived =", archives).run(batch_size=400)
+        alternatives = _GAEBingoAlternative.all().filter(
+                "archived =", archives).run(batch_size=400)
 
         for experiment in experiments:
             experiment_dict[experiment.name] = experiment
+
+        alternatives = sorted(list(alternatives), key=lambda alt: alt.number)
 
         for alternative in alternatives:
             if alternative.experiment_name not in alternatives_dict:
@@ -141,9 +159,13 @@ class BingoCache(object):
             alternatives_dict[alternative.experiment_name].append(alternative)
 
         for experiment_name in experiment_dict:
-            bingo_cache.add_experiment(experiment_dict.get(experiment_name), alternatives_dict.get(experiment_name))
+            ex, alts = (experiment_dict.get(experiment_name),
+                        alternatives_dict.get(experiment_name))
+            if ex and alts:
+                bingo_cache.add_experiment(ex, alts)
 
-        # Immediately store in memcache as soon as possible after loading from datastore to minimize # of datastore loads
+        # Immediately store in memcache as soon as possible after loading from
+        # datastore to minimize # of datastore loads
         bingo_cache.store_if_dirty()
 
         return bingo_cache
@@ -187,18 +209,7 @@ class BingoCache(object):
 
         self.dirty = True
 
-    def delete_experiment_and_alternatives(self, experiment):
-
-        if not experiment:
-            return
-
-        # First delete from datastore
-        experiment.delete()
-
-        for alternative in self.get_alternatives(experiment.name):
-            alternative.reset_counts()
-            alternative.delete()
-
+    def remove_from_cache(self, experiment):
         # Remove from current cache
         if experiment.name in self.experiments:
             del self.experiments[experiment.name]
@@ -222,6 +233,48 @@ class BingoCache(object):
 
         # Immediately store in memcache as soon as possible after deleting from datastore
         self.store_if_dirty()
+
+    @db.transactional(xg=True)
+    def delete_experiment_and_alternatives(self, experiment):
+        """Permanently delete specified experiment and all alternatives."""
+        if not experiment:
+            return
+
+        # First delete from datastore
+        experiment.delete()
+
+        for alternative in self.get_alternatives(experiment.name):
+            alternative.reset_counts()
+            alternative.delete()
+
+        self.remove_from_cache(experiment)
+
+    @db.transactional(xg=True)
+    def archive_experiment_and_alternatives(self, experiment):
+        """Permanently archive specified experiment and all alternatives.
+        
+        Archiving an experiment maintains its visibility for historical
+        purposes, but it will no longer be loaded into the cached list of
+        active experiments.
+
+        Args:
+            experiment: experiment entity to be archived.
+        """
+        if not experiment:
+            return
+
+        experiment.archived = True
+        experiment.live = False
+        experiment.put()
+
+        alts = self.get_alternatives(experiment.name)
+        for alternative in alts:
+            alternative.archived = True
+            alternative.live = False
+
+        db.put(alts)
+
+        self.remove_from_cache(experiment)
 
     def experiments_and_alternatives_from_canonical_name(self, canonical_name):
         experiment_names = self.get_experiment_names_by_canonical_name(canonical_name)
@@ -249,7 +302,7 @@ class BingoCache(object):
         return self.experiment_names_by_conversion_name.get(conversion_name) or []
 
     def get_experiment_names_by_canonical_name(self, canonical_name):
-        return self.experiment_names_by_canonical_name.get(canonical_name) or []
+        return sorted(self.experiment_names_by_canonical_name.get(canonical_name) or [])
 
 class BingoIdentityCache(object):
 
@@ -264,10 +317,10 @@ class BingoIdentityCache(object):
         init_request_cache_from_memcache()
 
         key = BingoIdentityCache.key_for_identity(identity())
-        if not REQUEST_CACHE.get(key):
-            REQUEST_CACHE[key] = BingoIdentityCache.load_from_datastore()
+        if not request_cache.cache.get(key):
+            request_cache.cache[key] = BingoIdentityCache.load_from_datastore()
 
-        return REQUEST_CACHE[key]
+        return request_cache.cache[key]
 
     def store_for_identity_if_dirty(self, ident):
         if not self.dirty:
@@ -284,10 +337,12 @@ class BingoIdentityCache(object):
 
     def persist_to_datastore(self, ident):
 
-        # Add the memcache value to a random memcache bucket which
+        # Add the memcache value to a memcache bucket which
         # will be persisted to the datastore when it overflows
         # or when the periodic cron job is run
-        bucket = random.randint(0, 50)
+        sig = hashlib.md5(str(ident)).hexdigest()
+        sig_num = int(sig, base=16)
+        bucket = sig_num % 51
         key = "_gae_bingo_identity_bucket:%s" % bucket
 
         list_identities = memcache.get(key) or []
@@ -298,7 +353,7 @@ class BingoIdentityCache(object):
             # If over 50 identities are waiting for persistent storage, 
             # go ahead and kick off a deferred task to do so
             # in case it'll be a while before the cron job runs.
-            deferred.defer(persist_gae_bingo_identity_records, list_identities)
+            deferred.defer(persist_gae_bingo_identity_records, list_identities, _queue=QUEUE_NAME)
 
             # There are race conditions here such that we could miss persistence
             # of some identities, but that's not a big deal as long as
@@ -317,7 +372,7 @@ class BingoIdentityCache(object):
 
         for key in dict_buckets:
             if len(dict_buckets[key]) > 0:
-                deferred.defer(persist_gae_bingo_identity_records, dict_buckets[key])
+                deferred.defer(persist_gae_bingo_identity_records, dict_buckets[key], _queue=QUEUE_NAME)
                 memcache.set(key, [])
 
     @staticmethod
@@ -366,8 +421,8 @@ def bingo_and_identity_cache():
 
 def store_if_dirty():
     # Only load from request cache here -- if it hasn't been loaded from memcache previously, it's not dirty.
-    bingo_cache = REQUEST_CACHE.get(BingoCache.MEMCACHE_KEY)
-    bingo_identity_cache = REQUEST_CACHE.get(BingoIdentityCache.key_for_identity(identity()))
+    bingo_cache = request_cache.cache.get(BingoCache.MEMCACHE_KEY)
+    bingo_identity_cache = request_cache.cache.get(BingoIdentityCache.key_for_identity(identity()))
 
     if bingo_cache:
         bingo_cache.store_if_dirty()
@@ -386,7 +441,7 @@ def persist_gae_bingo_identity_records(list_identities):
             bingo_identity = _GAEBingoIdentityRecord(
                         key_name = _GAEBingoIdentityRecord.key_for_identity(ident),
                         identity = ident,
-                        pickled = pickle.dumps(identity_cache),
+                        pickled = pickle_util.dump(identity_cache),
                     )
             bingo_identity.put()
 

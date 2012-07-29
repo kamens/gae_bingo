@@ -2,7 +2,7 @@ cron:
 
 - description: persist gae bingo experiments to datastore
   url: /gae_bingo/persist
-  schedule: every 5 minutes
+  schedule: every 1 minutes
 
 - description: log a snapshot of live experiement data to datastore 
   url: /gae_bingo/log_snapshot

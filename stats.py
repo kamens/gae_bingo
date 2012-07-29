@@ -14,7 +14,7 @@ DESCRIPTION_IN_WORDS = {
 def zscore(alternatives):
 
     if len(alternatives) != 2:
-        raise Exception("Sorry, can't currently automatically calculate statistics for A/B tests with > 2 alternatives. Need to brush up on some statistics via http://www.khanacademy.org/#statistics before implementing.")
+        raise Exception("Sorry, can't currently automatically calculate statistics for A/B tests with > 2 alternatives. Need to brush up on some statistics via http://www.khanacademy.org/math/statistics before implementing.")
 
     if alternatives[0].participants == 0 or alternatives[1].participants == 0:
         raise Exception("Can't calculate the z score if either of the alternatives lacks participants.")
@@ -70,7 +70,7 @@ def describe_result_in_words(alternatives):
     best_alternative = max(alternatives, key=lambda alternative: alternative.conversion_rate)
     worst_alternative = min(alternatives, key=lambda alternative: alternative.conversion_rate)
 
-    words += """The best alternative you have is: [%(best_alternative_content)s], which had 
+    words += """The best alternative you have is:[%(best_alternative_content)s], which had 
     %(best_alternative_conversions)s conversions from %(best_alternative_participants)s participants 
     (%(best_alternative_pretty_conversion_rate)s).  The other alternative was [%(worst_alternative_content)s], 
     which had %(worst_alternative_conversions)s conversions from %(worst_alternative_participants)s participants 

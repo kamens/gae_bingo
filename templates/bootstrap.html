@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>GAE/Bingo Experiments</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <link href="/gae_bingo/static/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+          body {
+            padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+          }
+        </style>
+        <link href="/gae_bingo/static/css/dashboard.css" rel="stylesheet">
+
+        <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+        <!--[if lt IE 9]>
+          <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+        <![endif]-->
+
+        <script id="tmpl-experiments" type="x-handlebars-template">
+            {{^experiment_results}}
+            <div class="experiment-container block">
+                <h3>What, no experiments?!</h3>
+                <p>You really should try experimenting more.</p>
+            </div>
+            {{/experiment_results}}
+
+            {{#experiment_results}}
+
+            <div class="well experiment-container experiment-container-minimized block {{^live}}not-live{{/live}} {{#if archived}}archived{{/if}}"
+                data-canonical-name="{{canonical_name}}">
+
+                <div class="btn-group experiment-controls" data-toggle="buttons-radio" style="float:right;">
+                    {{#unless archived}}
+                    <button class="disabled btn btn-large start-experiment control-experiment {{#if live}}active{{else}}inactive{{/if}}"
+                        data-active-cls="btn-success" data-canonical-name="{{canonical_name}}"
+                        data-action="resume">
+                        <span class="content-active">Running</span>
+                        <span class="content-inactive">Run</span>
+                    </button>
+                    <button class="disabled btn btn-large {{#if stopped}}active{{else}}inactive{{/if}}" data-toggle="dropdown" data-active-cls="btn-danger">
+                        <span class="content-active">Stopped</span>
+                        <span class="content-inactive">Stop</span>
+                        <span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu pull-right">
+                    {{#alternatives}}
+                        <li>
+                            <a href="#" class="stop-experiment control-experiment"
+                                data-canonical-name="{{../canonical_name}}" data-alternative-number="{{number}}"
+                                data-action="choose_alternative">
+                                Stop running this experiment and always pick <strong>{{pretty_content}}</strong> from now on
+                            </a>
+                        </li>
+                    {{/alternatives}}
+                    </ul>
+                    {{/unless}}
+                    <button class="disabled btn btn-large archive-experiment control-experiment {{#if archived}}active{{else}}inactive{{/if}}"
+                        data-active-cls="btn-inverse" data-canonical-name="{{canonical_name}}"
+                        data-action="archive">
+                        <span class="content-active">Archived</span>
+                        <span class="content-inactive">Archive</span>
+                    </button>
+                </div>
+
+                <h2 class="experiment-title">
+                    {{pretty_canonical_name}}
+                    <small>
+                        {{age_desc}}
+                    </small>
+                </h2>
+
+                <div class="experiment-summary-content"></div>
+
+                <div class="bottom-controls">
+                    <a href="/gae_bingo/dashboard/export?canonical_name={{canonical_name}}">Export as CSV</a> | 
+                    <a href="#" class="delete-experiment control-experiment"
+                        data-canonical-name="{{canonical_name}}"  data-replace-with="Deleting experiment..."
+                        data-action="delete">Delete this experiment</a>
+                </div>
+            </div>
+             
+            {{/experiment_results}}
+        </script>
+
+        <script id="tmpl-experiment-summary" type="x-handlebars-template">
+            <div class="archived-notes row-fluid">
+                <div class="span6">
+                    <textarea class="input-xlarge notes-content" placeholder="One or two sentence description of your experiment, an explanation of any non-standard conversion metrics, your interpretation of the results, and any data to support your conclusions. Try to keep this as brief as possible (without omitting useful insight)."></textarea>
+                </div>
+                <div class="span6">
+                    <button class="btn emo" data-toggle="button" value="happy">
+                        <img src="/gae_bingo/static/img/happy.png"><br/>
+                        <span class="emo-inactive">Happy?</span><span class="emo-active">I'm happy.</span>
+                    </button>
+                    <button class="btn emo" data-toggle="button" value="sad">
+                        <img src="/gae_bingo/static/img/sad.png"><br/>
+                        <span class="emo-inactive">Sad?</span><span class="emo-active">I'm sad.</span>
+                    </button>
+                    <button class="btn emo" data-toggle="button" value="confused">
+                        <img src="/gae_bingo/static/img/confused.png"><br/>
+                        <span class="emo-inactive">Confused?</span><span class="emo-active">I'm confused.</span>
+                    </button>
+                    <button class="btn emo" data-toggle="button" value="surprised">
+                        <img src="/gae_bingo/static/img/surprised.png"><br/>
+                        <span class="emo-inactive">Surprised?</span><span class="emo-active">I'm surprised.</span>
+                    </button>
+                </div>
+                <div class="row-fluid">
+                    <div class="span12 save-container">
+                        <button class="btn btn-info save-notes" data-canonical-name="{{canonical_name}}">Save notes and emotions</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="secondary-navigation" {{^multiple_experiments}}style="display:none;"{{/multiple_experiments}}>
+                <ul class="nav nav-pills">
+                    {{#experiments}}
+                        {{#start_conversion_group}}
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">{{conversion_group}} <b class="caret"></b></a>
+                            <ul class="dropdown-menu">
+                        {{/start_conversion_group}}
+
+                        <li><a href="#" data-experiment-name="{{experiment_name}}" class="conversions-link">{{pretty_conversion_name}}</a></li>
+
+                        {{#end_conversion_group}}
+                            </ul>
+                        </li>
+                        {{/end_conversion_group}}
+                    {{/experiments}}
+
+                </ul>
+            </div>
+
+            <div class="experiment-conversions-content">Loading...</div>
+        </script>
+
+        <script id="tmpl-experiment-conversions-content" type="x-handlebars-template">
+            <table class="table table-striped">
+                <tbody>
+                    <tr>
+                        <th width="33%">Alternative</th>
+                        <th width="33%">Participants</th>
+                        <th width="33%">Conversions</th>
+                        <th>&nbsp;</th>
+                    </tr>
+
+                    {{#alternatives}}
+                    <tr>
+                        <td>{{pretty_content}}</td>
+                        <td>{{participants}}</td>
+                        <td>{{conversions}} ({{pretty_conversion_rate}})</td>
+                        <td>
+                            <button type="submit" class="btn btn-info btn-mini preview-alternative" 
+                                data-alternative-number="{{number}}" data-canonical-name="{{../canonical_name}}">Preview This</button>
+
+                            <span class="seeing-alternative" data-alternative-number="{{number}}">
+                                <strong><nobr>All users seeing this.</nobr></strong>
+                            </span>
+                        </td>
+                    </tr>
+                    {{/alternatives}}
+
+                    <tr>
+                        <td class="title"><em>Total</em></td>
+                        <td>{{total_participants}}</td>
+                        <td>{{total_conversions}}</td>
+                        <td>&nbsp;</td>
+                    </tr>
+
+                    <tr>
+                        <th colspan="4">
+                            Significance Test Results: {{significance_test_results}}
+                        </th>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div id="highchart-{{canonical_name}}" class="highchart-container"></div>
+        </script>
+
+    </head>
+    <body>
+
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </a>
+                    <a class="brand" href="/gae_bingo">GAE/Bingo</a>
+                    <div class="nav-collapse">
+                        <ul class="nav">
+                            <li class="nav-experiments"><a href="/gae_bingo">Experiments</a></li>
+                            <li class="nav-archives"><a href="/gae_bingo/dashboard/archives">Archives</a></li>
+                            <li><a href="https://github.com/kamens/gae_bingo#readme">Docs</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="main" class="container">
+            <h1>You're a mad data scientist.</h1>
+            <p>You don your lab coat.</p>
+
+            <div id="progress-bar"><img src="/gae_bingo/static/img/ajax-loader.gif"/></div>
+        </div>
+
+        <script src="/gae_bingo/static/js/jquery.js"></script>
+        <script src="/gae_bingo/static/js/bootstrap.min.js"></script>
+        <script src="/gae_bingo/static/js/handlebars.js"></script>
+        <script src="/gae_bingo/static/js/jQueryHandlebars.js"></script>
+        <script src="/gae_bingo/static/js/highcharts.js"></script>
+        <script src="/gae_bingo/static/js/dashboard.js"></script>
+        <script src="/gae_bingo/static/js/gae_bingo.js"></script>
+
+    </body>
+</html>

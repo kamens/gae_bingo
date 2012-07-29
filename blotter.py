@@ -5,14 +5,18 @@ POSTs allow you to score conversions for a given test
 
 """
 import os
-import logging
 
 from google.appengine.ext.webapp import RequestHandler
 
 from .gae_bingo import bingo, ab_test
 from .cache import BingoCache
 from .config import can_control_experiments
-import simplejson as json
+
+# use json in Python 2.7, fallback to simplejson for Python 2.5
+try:
+    import json
+except ImportError:
+    import simplejson as json
 
 class AB_Test(RequestHandler):
     """request user alternative/state for an experiment by passing 
@@ -90,14 +94,13 @@ class AB_Test(RequestHandler):
 
 
 class Bingo(RequestHandler):
-    """post a conversion to gae_bingo by passing { convert : "conversion_name" }
-    
-    you cannot currently pass a json list (as the response would be a bit ambiguous)
-    so instead pass multiple calls to post (which is what the js tool does)
+    """post a conversion to gae_bingo by passing
+    { convert : "conversion_name_1\tconversion_name_2\t..." }
     
     successful conversions return HTTP 204
     
-    failed conversions return a 404 (i.e. experiment not found in reverse-lookup)
+    failed conversions return a 404 (i.e. experiment for any conversion name not
+    found in reverse-lookup)
     
     no params returns a 400 error
     """
@@ -106,30 +109,26 @@ class Bingo(RequestHandler):
         
         bingo_cache = BingoCache.get()
         
-        conversion = self.request.get("convert", None)
-        if conversion:
-            try:
-                conversion = json.loads(conversion)
-            except json.JSONDecodeError, e:
-                logging.error("json.loads FAILED on input: %s", conversion)
-                raise e
+        conversion_names = self.request.get("convert", '""').split("\t")
 
         self.response.headers['Content-Type'] = 'text/json'
 
-        experiment_names = bingo_cache.get_experiment_names_by_conversion_name(conversion)
-        
+        found_experiments = any(
+                bingo_cache.get_experiment_names_by_conversion_name(name)
+                for name in conversion_names)
+
         status = 200
         response = None
         
-        if conversion:
+        if conversion_names:
             
-            if len(experiment_names) > 0:
+            if found_experiments:
                 # send null message and score the conversion
                 status = 204
-                bingo(conversion)
+                bingo(conversion_names)
             
             else:
-                # send error
+                # send error, conversion not found
                 status = 404
         
         else:
@@ -140,5 +139,4 @@ class Bingo(RequestHandler):
         self.response.set_status(status)
         if response:
             self.response.out.write(json.dumps(response))
-        return
         

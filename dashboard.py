@@ -17,9 +17,10 @@ class Dashboard(RequestHandler):
             self.redirect("/")
             return
 
-        path = os.path.join(os.path.dirname(__file__), "templates/base.html")
-        f = None
+        path = os.path.join(os.path.dirname(__file__),
+                "templates/bootstrap.html")
 
+        f = None
         try:
             f = open(path, "r")
             html = f.read()
@@ -28,6 +29,7 @@ class Dashboard(RequestHandler):
                 f.close()
 
         self.response.out.write(html)
+
 
 class Export(RequestHandler):
 
