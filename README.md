@@ -234,31 +234,46 @@ from gae_bingo.middleware import GAEBingoWSGIMiddleware
 application = GAEBingoWSGIMiddleware(application)
 ```
 
-4. (Optional, suggested) If you want, modify the contents of config.py to match your application's usage. There
-   are two functions to modify: can_control_experiments() and
+4. (Optional, suggested) If you want, use appengine_config.py to modify the contents of config.py to match
+   your application's usage. The two most interesting functions to modify are can_control_experiments() and
    current_logged_in_identity()
 
 ```python
-# Customize can_see_experiments however you want to specify
-# whether or not the currently-logged-in user has access
-# to the experiment dashboard.
-#
-def can_control_experiments():
-    # This default implementation will be fine for most
+# ...in appengine_config.py...
+def gae_bingo_can_control_experiments():
+    # Choose which users have access to the experiment dashboard.
+    # This default implementation will be fine for most.
     return users.is_current_user_admin()
 ```
 
 ```python
-# Customize current_logged_in_identity to make your a/b sessions
-# stickier and more persistent per user.
-#
-# This should return one of the following:
-#
-#   A) a db.Model that identifies the current user, something like models.UserData.current()
-#   B) a unique string that consistently identifies the current user, like users.get_current_user().user_id()
-#   C) None, if your app has no way of identifying the current user for the current request. In this case gae_bingo will automatically use a random unique identifier.
-#
-def current_logged_in_identity():
+# ...in appengine_config.py...
+def gae_bingo_current_logged_in_identity():
+    # CUSTOMIZE current_logged_in_identity to make your a/b sessions
+    # stickier and more persistent per user.
+    #
+    # This should return one of the following:
+    #
+    #   A) a db.Model that identifies the current user, like
+    #      user_models.UserData.current()
+    #   B) a unique string that consistently identifies the current user, like
+    #      users.get_current_user().user_id()
+    #   C) None, if your app has no way of identifying the current user for the
+    #      current request. In this case gae_bingo will automatically use a random
+    #      unique identifier.
+    #
+    # Ideally, this should be connected to your app's existing identity system.
+    #
+    # To get the strongest identity tracking even when switching from a random, not
+    # logged-in user to a logged in user, return a model that inherits from
+    # GaeBingoIdentityModel.  See docs for details.
+    #
+    # Examples:
+    #   return user_models.UserData.current()
+    #         ...or...
+    #   from google.appengine.api import users
+    #   user = users.get_current_user()
+    #   return user.user_id() if user else None
     return users.get_current_user().user_id() if users.get_current_user() else None
 ```
 
