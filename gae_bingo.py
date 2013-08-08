@@ -1,15 +1,24 @@
+import datetime
 import hashlib
 import logging
+import re
 import time
 import urllib
 
 from google.appengine.api import memcache
+from google.appengine.ext import ndb
 
-from .cache import BingoCache, bingo_and_identity_cache
+import cache
+from .cache import BingoCache, BingoIdentityCache, bingo_and_identity_cache
 from .models import create_experiment_and_alternatives, ConversionTypes
-from .identity import identity
-from .config import can_control_experiments
+from .identity import can_control_experiments, identity
 from .cookies import get_cookie_value
+from .persist import PersistLock
+
+# gae/bingo supports up to four alternatives per experiment due to
+# synchronized_counter's limit of 4 synchronized counters per combination.
+# See synchronized_counter.py for more.
+MAX_ALTERNATIVES_PER_EXPERIMENT = 4
 
 def create_unique_experiments(canonical_name,
                               alternative_params,
@@ -58,9 +67,11 @@ def create_unique_experiments(canonical_name,
 
     bingo_cache.store_if_dirty()
 
-def participate_in_experiments(experiments,
-                               alternative_lists,
-                               bingo_identity_cache):
+
+@ndb.tasklet
+def participate_in_experiments_async(experiments,
+                                     alternative_lists,
+                                     bingo_identity_cache):
     """ Given a list of experiments (with unique names), alternatives for each,
         and an identity cache:
         --Enroll the current user in each experiment
@@ -68,39 +79,47 @@ def participate_in_experiments(experiments,
             (this will be one of the entries in alternative_lists)
 
     """
-    returned_content = None
+    returned_content = [None]
 
-    for i in range(len(experiments)):
-
-        experiment, alternatives = experiments[i], alternative_lists[i]
-
+    @ndb.tasklet
+    def participate_async(experiment, alternatives):
         if not experiment.live:
-
             # Experiment has ended. Short-circuit and use selected winner
             # before user has had a chance to remove relevant ab_test code.
-            returned_content = experiment.short_circuit_content
+            returned_content[0] = experiment.short_circuit_content
 
         else:
-
-            alternative = _find_alternative_for_user(experiment.hashable_name,
+            alternative = _find_alternative_for_user(experiment,
                                                     alternatives)
 
             if experiment.name not in bingo_identity_cache.participating_tests:
-                if alternative.increment_participants():
+                if (yield alternative.increment_participants_async()):
                     bingo_identity_cache.participate_in(experiment.name)
 
             # It shouldn't matter which experiment's alternative content
             # we send back -- alternative N should be the same across
             # all experiments w/ same canonical name.
-            returned_content = alternative.content
+            returned_content[0] = alternative.content
 
-    return returned_content
+    yield [participate_async(e, a)
+           for e, a in zip(experiments, alternative_lists)]
+
+    raise ndb.Return(returned_content[0])
+
+
+def participate_in_experiments(*args):
+    return participate_in_experiments_async(*args).get_result()
+
 
 def ab_test(canonical_name,
             alternative_params = None,
             conversion_name = None,
             conversion_type = ConversionTypes.Binary,
             family_name = None):
+
+    if (alternative_params is not None and
+            len(alternative_params) > MAX_ALTERNATIVES_PER_EXPERIMENT):
+        raise Exception("Cannot ab test with more than 4 alternatives")
 
     bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
 
@@ -195,27 +214,31 @@ def ab_test(canonical_name,
                                       bingo_identity_cache)
 
 
-def bingo(param):
+def bingo(param, identity_val=None):
+    bingo_async(param, identity_val).get_result()
 
-    if type(param) == list:
 
+@ndb.tasklet
+def bingo_async(param, identity_val=None):
+
+    if isinstance(param, list):
         # Bingo for all conversions in list
-        for conversion_name in param:
-            bingo(conversion_name)
-        return
+        yield [bingo_async(conversion_name, identity_val)
+               for conversion_name in param]
 
     else:
-
         conv_name = str(param)
         bingo_cache = BingoCache.get()
         experiments = bingo_cache.get_experiment_names_by_conversion_name(
                 conv_name)
-        # Bingo for all experiments associated with this conversion
-        for experiment_name in experiments:
-            score_conversion(experiment_name)
 
-def score_conversion(experiment_name):
-    bingo_cache, bingo_identity_cache = bingo_and_identity_cache()
+        # Bingo for all experiments associated with this conversion
+        yield [score_conversion_async(e, identity_val) for e in experiments]
+
+
+@ndb.tasklet
+def score_conversion_async(experiment_name, identity_val=None):
+    bingo_cache, bingo_identity_cache = bingo_and_identity_cache(identity_val)
 
     if experiment_name not in bingo_identity_cache.participating_tests:
         return
@@ -234,14 +257,77 @@ def score_conversion(experiment_name):
         return
 
     alternative = _find_alternative_for_user(
-                      experiment.hashable_name,
-                      bingo_cache.get_alternatives(experiment_name))
+                      experiment,
+                      bingo_cache.get_alternatives(experiment_name),
+                      identity_val)
 
-    if alternative.increment_conversions():
+    # TODO(kamens): remove this! Temporary protection from an experiment that
+    # has more than 4 alternatives while we migrate to the new gae/bingo
+    # alternative restriction.
+    if alternative.number >= 4:
+        return
+
+    if (yield alternative.increment_conversions_async()):
         bingo_identity_cache.convert_in(experiment_name)
 
-def choose_alternative(canonical_name, alternative_number):
 
+class ExperimentModificationException(Exception):
+    """An exception raised when calls to control or modify an experiment
+    is unable to do so safely due to contention with background tasks.
+
+    If there is too much contention between mutating an experiment and
+    constantly running persist tasks, this exception is raised.
+
+    See ExperimentController for more details.
+    """
+    pass
+
+
+class ExperimentController(object):
+    """A context that can be used to build monitors to modify experiments.
+
+    Since modifications of the bingo data need to happen atomically across
+    multiple items, the constantly running persist tasks could interfere with
+    clients attempting to do control operations that modify experiments.
+
+    Use this in conjunction with a with statement before calling any
+    experiment modifying methods. This context will also flush the bingo
+    cache on exit.
+    """
+
+    _lock_set = False
+
+    def __enter__(self):
+        self.lock = PersistLock()
+        if not self.lock.spin_and_take():
+            raise ExperimentModificationException(
+                    "Unable to acquire lock to modify experiments")
+        ExperimentController._lock_set = True
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        # Forcefully flush the cache, since this must be done inside of
+        # the monitor. The mutation methods (e.g. choose_alternative) are
+        # implemented in such a way that they rely on the gae/bingo middleware
+        # to flush the data. But by that point the lock will have been released
+        cache.store_if_dirty()
+        ExperimentController._lock_set = False
+        logging.info(
+                "Exiting monitor from ExperimentController. About to "
+                "release the lock (current value: [%s])" %
+                self.lock.is_active())
+        self.lock.release()
+
+    @staticmethod
+    def assert_safe():
+        """Assert that caller is in a monitor that can modify experiments."""
+        if not ExperimentController._lock_set:
+            raise ExperimentModificationException(
+                    "Attempting to modify experiment outside of monitor. "
+                    "Use with ExperimentController(): ... around "
+                    "your snippet.")
+
+def choose_alternative(canonical_name, alternative_number):
+    ExperimentController.assert_safe()
     bingo_cache = BingoCache.get()
 
     # Need to end all experiments that may have been kicked off
@@ -257,17 +343,25 @@ def choose_alternative(canonical_name, alternative_number):
         experiment, alternatives = experiments[i], alternative_lists[i]
 
         alternative_chosen = filter(
-                                lambda alt: alt.number == alternative_number,
-                                alternatives)
+                lambda alt: alt.number == alternative_number,
+                alternatives)
 
         if len(alternative_chosen) == 1:
             experiment.live = False
-            experiment.set_short_circuit_content(alternative_chosen[0].content)
+            experiment.set_short_circuit_content(
+                    alternative_chosen[0].content)
             bingo_cache.update_experiment(experiment)
+        else:
+            logging.warning(
+                    "Skipping choose alternative for %s (chosen: %s)" %
+                    (experiment.name, alternative_chosen))
 
-def delete_experiment(canonical_name, bingo_cache=None):
+def delete_experiment(canonical_name, retrieve_archives=False):
+    ExperimentController.assert_safe()
 
-    if not bingo_cache:
+    if retrieve_archives:
+        bingo_cache = BingoCache.load_from_datastore(archives=True)
+    else:
         bingo_cache = BingoCache.get()
 
     # Need to delete all experiments that may have been kicked off
@@ -285,6 +379,7 @@ def delete_experiment(canonical_name, bingo_cache=None):
 def archive_experiment(canonical_name):
     """Archive named experiment permanently, removing it from active cache."""
 
+    ExperimentController.assert_safe()
     bingo_cache = BingoCache.get()
 
     # Need to archive all experiments that may have been kicked off
@@ -294,13 +389,18 @@ def archive_experiment(canonical_name):
                 canonical_name))
 
     if not experiments or not alternative_lists:
+        logging.error("Can't find experiments named %s" % canonical_name)
         return
 
     for experiment in experiments:
+        if not experiment:
+            logging.error("Found empty experiment under %s" % canonical_name)
+        else:
+            logging.info("Archiving %s" % experiment.name)
         bingo_cache.archive_experiment_and_alternatives(experiment)
 
 def resume_experiment(canonical_name):
-
+    ExperimentController.assert_safe()
     bingo_cache = BingoCache.get()
 
     # Need to resume all experiments that may have been kicked off
@@ -315,6 +415,30 @@ def resume_experiment(canonical_name):
     for experiment in experiments:
         experiment.live = True
         bingo_cache.update_experiment(experiment)
+
+
+def get_experiment_participation(identity_val=None):
+    """Get the the experiments and alternatives the user participated in.
+
+    Returns a dict of canonical name: alternative for every experiment that
+    this user participated in, even if the experiment has ended.
+    """
+    bingo_cache, bingo_identity_cache = bingo_and_identity_cache(identity_val)
+
+    tests = bingo_identity_cache.participating_tests
+
+    # HACK: tests is actually a list of conversions, so try to reduce them to
+    # canonical names. Just use the full name if there's no paren.
+    expts = set()
+    for t in tests:
+        i = t.rfind(" (")
+        expts.add(t if i == -1 else t[0:i])
+
+    # now get the alternative this user is participating in, as long as it is
+    # actually a canonical name (just skip the ones that are not)
+    return {e: find_alternative_for_user(e, identity_val) for e in expts
+            if e in bingo_cache.experiment_names_by_canonical_name}
+
 
 def find_alternative_for_user(canonical_name, identity_val):
     """ Returns the alternative that the specified bingo identity belongs to.
@@ -349,43 +473,69 @@ def find_alternative_for_user(canonical_name, identity_val):
         # Experiment has ended - return result that was selected.
         return experiment.short_circuit_content
 
-    return _find_alternative_for_user(
-                experiment.hashable_name,
+    return _find_alternative_for_user(experiment,
                 bingo_cache.get_alternatives(experiment_name),
                 identity_val).content
 
-def _find_alternative_for_user(experiment_hashable_name,
+
+def find_cookie_val_for_user(experiment_name):
+    """ For gae_bingo admins, return the value of a cookie associated with the
+    given experiment name. """
+    if not can_control_experiments():
+        return None
+
+    # This escaping must be consistent with what's done in
+    # static/js/dashboard.js
+    cookie_val = get_cookie_value(
+        "GAEBingo_%s" % re.sub(r'\W', '+', experiment_name))
+    if not cookie_val:
+        return None
+    return int(cookie_val)
+
+
+def find_cookie_alt_param_for_user(experiment_name, alternative_params):
+    """ If gae_bingo administrator, allow possible override of alternative.
+
+    Return the cookie value set when gae_bingo adminstrators click the
+    "preview" button for an experiment alternative in the gae_bingo dashboard.
+    """
+    index = find_cookie_val_for_user(experiment_name)
+    if index is None or index >= len(alternative_params):
+        return None
+    return alternative_params[index]
+
+
+def _find_cookie_alternative_for_user(experiment, alternatives):
+    index = find_cookie_val_for_user(experiment.hashable_name)
+    if index is None:
+        return None
+    return next((x for x in alternatives if x.number == index), None)
+
+
+def _find_alternative_for_user(experiment,
                                alternatives,
                                identity_val=None):
+    return (_find_cookie_alternative_for_user(experiment, alternatives) or
+            modulo_choose(experiment, alternatives, identity(identity_val)))
 
-    if can_control_experiments():
-        # If gae_bingo administrator, allow possible override of alternative
-        cookie_val = get_cookie_value(
-                        "GAEBingo_%s"
-                        % (experiment_hashable_name
-                           .replace(" ", "+")
-                           .replace("-", "+")))
 
-        if cookie_val:
-            matches = filter(lambda alt: alt.number == int(cookie_val),
-                             alternatives)
-            if len(matches) == 1:
-                return matches[0]
+def modulo_choose(experiment, alternatives, identity):
 
-    return modulo_choose(experiment_hashable_name,
-                         alternatives,
-                         identity(identity_val))
-
-def modulo_choose(experiment_hashable_name, alternatives, identity):
     alternatives_weight = sum(map(lambda alt: alt.weight, alternatives))
 
-    sig = hashlib.md5(experiment_hashable_name + str(identity)).hexdigest()
+    sig = hashlib.md5(experiment.hashable_name + str(identity)).hexdigest()
     sig_num = int(sig, base=16)
     index_weight = sig_num % alternatives_weight
-
     current_weight = alternatives_weight
+
+    # TODO(eliana) remove once current expts end
+    if experiment.dt_started > datetime.datetime(2013, 3, 26, 18, 0, 0, 0):
+        sorter = lambda alt: (alt.weight, alt.number)
+    else:
+        sorter = lambda alt: alt.weight
+
     for alternative in sorted(alternatives,
-                              key=lambda alt: alt.weight,
+                              key=sorter,
                               reverse=True):
 
         current_weight -= alternative.weight

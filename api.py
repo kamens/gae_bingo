@@ -1,3 +1,4 @@
+import copy
 import itertools
 import logging
 import os
@@ -5,18 +6,20 @@ import os
 from google.appengine.ext.webapp import RequestHandler
 
 from .gae_bingo import choose_alternative, delete_experiment, resume_experiment
-from .gae_bingo import archive_experiment, modulo_choose
+from .gae_bingo import archive_experiment, modulo_choose, ExperimentController
 from .models import _GAEBingoExperimentNotes
 from .cache import BingoCache
 from .stats import describe_result_in_words
-from .config import can_control_experiments, retrieve_identity
+from .config import config
 from .jsonify import jsonify
 from .plots import get_experiment_timeline_data
-from .identity import identity
+from .identity import can_control_experiments, identity
+import instance_cache
+import request_cache
 
 class GAEBingoAPIRequestHandler(RequestHandler):
     """Request handler for all GAE/Bingo API requests.
-    
+
     Each individual GAE/Bingo API request is either interacting with live data
     or archived data. Live and archived data are stored and cached differently,
     and this request handler can load each set of data as specified by the
@@ -27,6 +30,11 @@ class GAEBingoAPIRequestHandler(RequestHandler):
         """True if request is interacting with archived data."""
         return self.request.get("archives") == "1"
 
+    def flush_in_app_caches(self):
+        """Flush in-app request and instance caches of gae/bingo state."""
+        request_cache.flush_request_cache()
+        instance_cache.flush()
+
     def request_bingo_cache(self):
         """Return BingoCache object for live/archived data, as appropriate.
 
@@ -35,10 +43,51 @@ class GAEBingoAPIRequestHandler(RequestHandler):
         the experiments will be inactive and read-only unless permanently
         deleting them.
         """
+        # Flush in-app caches so we load the latest shared experiment state
+        self.flush_in_app_caches()
+
         if self.is_requesting_archives():
             return BingoCache.load_from_datastore(archives=True)
         else:
             return BingoCache.get()
+
+
+def experiments_from_cache(bingo_cache, requesting_archives):
+    """Retrieve experiments data for consumption via the API.
+
+    Arguments:
+        bingo_cache - the cache where the data is to be retrieved from
+        requesting_archives - whether or not archived experiments should be
+            returned or non-archived experiments
+    """
+    experiment_results = {}
+
+    for canonical_name in bingo_cache.experiment_names_by_canonical_name:
+        experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(canonical_name)
+
+        if not experiments or not alternative_lists:
+            continue
+
+        for experiment, alternatives in itertools.izip(
+                experiments, alternative_lists):
+
+            # Combine related experiments and alternatives into a single
+            # canonical experiment for response
+            if experiment.canonical_name not in experiment_results:
+                experiment.alternatives = alternatives
+                experiment_results[experiment.canonical_name] = experiment
+
+    # Sort by status primarily, then name or date
+    results = experiment_results.values()
+
+    if requesting_archives:
+        results.sort(key=lambda ex: ex.dt_started, reverse=True)
+    else:
+        results.sort(key=lambda ex: ex.pretty_canonical_name)
+
+    results.sort(key=lambda ex: ex.live, reverse=True)
+    return results
+
 
 class Experiments(GAEBingoAPIRequestHandler):
 
@@ -48,34 +97,8 @@ class Experiments(GAEBingoAPIRequestHandler):
             return
 
         bingo_cache = self.request_bingo_cache()
-
-        experiment_results = {}
-
-        for canonical_name in bingo_cache.experiment_names_by_canonical_name:
-            experiments, alternative_lists = bingo_cache.experiments_and_alternatives_from_canonical_name(canonical_name)
-
-            if not experiments or not alternative_lists:
-                continue
-
-            for experiment, alternatives in itertools.izip(
-                    experiments, alternative_lists):
-
-                # Combine related experiments and alternatives into a single
-                # canonical experiment for response
-                if experiment.canonical_name not in experiment_results:
-                    experiment.alternatives = alternatives
-                    experiment_results[experiment.canonical_name] = experiment
-
-        # Sort by status primarily, then name or date
-        results = experiment_results.values()
-
-        if self.is_requesting_archives():
-            results.sort(key=lambda ex: ex.dt_started, reverse=True)
-        else:
-            results.sort(key=lambda ex: ex.canonical_name)
-
-        results.sort(key=lambda ex: ex.live, reverse=True)
-
+        results = experiments_from_cache(
+                bingo_cache, self.is_requesting_archives())
         context = { "experiment_results": results }
 
         self.response.headers["Content-Type"] = "application/json"
@@ -147,46 +170,55 @@ class ExperimentSummary(GAEBingoAPIRequestHandler):
 class ExperimentConversions(GAEBingoAPIRequestHandler):
 
     def get(self):
-
         if not can_control_experiments():
             return
 
         bingo_cache = self.request_bingo_cache()
-        experiment_name = self.request.get("experiment_name")
-        experiment = bingo_cache.get_experiment(experiment_name)
-        alternatives = bingo_cache.get_alternatives(experiment_name)
+        expt_name = self.request.get("experiment_name")
 
-        if not experiment or not alternatives:
-            raise Exception("No experiment matching name: %s" % canonical_name)
+        data = self.get_context(bingo_cache, expt_name)
+
+        self.response.headers["Content-Type"] = "application/json"
+        self.response.out.write(jsonify(data))
+
+    @staticmethod
+    def get_context(bingo_cache, expt_name):
+        expt = bingo_cache.get_experiment(expt_name)
+        alts = bingo_cache.get_alternatives(expt_name)
+        if not expt or not alts:
+            raise Exception("No experiment matching name: %s" % expt_name)
 
         short_circuit_number = -1
 
-        for alternative in alternatives:
-            if ((not experiment.live) and 
-                    experiment.short_circuit_content == alternative.content):
-                short_circuit_number = alternative.number
+        # Make a deep copy of these alternatives so we can modify their
+        # participants and conversion counts below for an up-to-date dashboard
+        # without impacting counts in shared memory.
+        alts = copy.deepcopy(alts)
+        for alt in alts:
+            if not expt.live and expt.short_circuit_content == alt.content:
+                short_circuit_number = alt.number
 
-            alternative.load_latest_counts()
+            # Load the latest alternative counts into these copies of
+            # alternative models for up-to-date dashboard counts.
+            alt.participants = alt.latest_participants_count()
+            alt.conversions = alt.latest_conversions_count()
 
-        context = {
-                "canonical_name": experiment.canonical_name,
-                "live": experiment.live,
-                "total_participants": reduce(lambda a, b: a + b, map(lambda alternative: alternative.participants, alternatives)),
-                "total_conversions": reduce(lambda a, b: a + b, map(lambda alternative: alternative.conversions, alternatives)),
-                "alternatives": alternatives,
-                "significance_test_results": describe_result_in_words(alternatives),
-                "y_axis_title": experiment.y_axis_title,
-                "timeline_series": get_experiment_timeline_data(experiment),
-                "short_circuit_number": short_circuit_number
+        return {
+            "canonical_name": expt.canonical_name,
+            "hashable_name": expt.hashable_name,
+            "live": expt.live,
+            "total_participants": sum(a.participants for a in alts),
+            "total_conversions": sum(a.conversions for a in alts),
+            "alternatives": alts,
+            "significance_test_results": describe_result_in_words(alts),
+            "y_axis_title": expt.y_axis_title,
+            "timeline_series": get_experiment_timeline_data(expt, alts),
+            "short_circuit_number": short_circuit_number
         }
-
-        self.response.headers["Content-Type"] = "application/json"
-        self.response.out.write(jsonify(context))
 
 class ControlExperiment(GAEBingoAPIRequestHandler):
 
     def post(self):
-
         if not can_control_experiments():
             return
 
@@ -200,14 +232,23 @@ class ControlExperiment(GAEBingoAPIRequestHandler):
         if not action or not canonical_name:
             return
 
-        if action == "choose_alternative":
-            choose_alternative(canonical_name, int(self.request.get("alternative_number")))
-        elif action == "delete":
-            delete_experiment(canonical_name, self.request_bingo_cache())
-        elif action == "resume":
-            resume_experiment(canonical_name)
-        elif action == "archive":
-            archive_experiment(canonical_name)
+        # Flush the in app caches to make sure we're operating on the most
+        # recent experiments.
+        self.flush_in_app_caches()
+
+        with ExperimentController():
+            if action == "choose_alternative":
+                choose_alternative(
+                        canonical_name,
+                        int(self.request.get("alternative_number")))
+            elif action == "delete":
+                delete_experiment(
+                        canonical_name,
+                        self.is_requesting_archives())
+            elif action == "resume":
+                resume_experiment(canonical_name)
+            elif action == "archive":
+                archive_experiment(canonical_name)
 
         self.response.headers["Content-Type"] = "application/json"
         self.response.out.write(jsonify(True))
@@ -244,13 +285,13 @@ class Alternatives(GAEBingoAPIRequestHandler):
 
         query = self.request.get("query")
         if query:
-            id = retrieve_identity(query)
+            id = config.retrieve_identity(query)
         else:
             id = identity()
 
         if not id:
             raise Exception("Error getting identity for query: %s" % str(query))
-        
+
         bingo_cache = self.request_bingo_cache()
 
         chosen_alternatives = {}
@@ -260,7 +301,7 @@ class Alternatives(GAEBingoAPIRequestHandler):
 
             if experiment.canonical_name not in chosen_alternatives:
                 alternatives = bingo_cache.get_alternatives(experiment_name)
-                alternative = modulo_choose(experiment.hashable_name, alternatives, id)
+                alternative = modulo_choose(experiment, alternatives, id)
                 chosen_alternatives[experiment.canonical_name] = str(alternative.content)
 
         context = {

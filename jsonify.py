@@ -137,7 +137,7 @@ def jsonify(data, camel_cased=False):
         encoder = JSONModelEncoder
     return json.dumps(data,
                       skipkeys=True,
-                      sort_keys=True,
+                      sort_keys=False,
                       ensure_ascii=False,
                       indent=4,
                       cls=encoder)

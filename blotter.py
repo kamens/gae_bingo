@@ -10,7 +10,7 @@ from google.appengine.ext.webapp import RequestHandler
 
 from .gae_bingo import bingo, ab_test
 from .cache import BingoCache
-from .config import can_control_experiments
+from .identity import can_control_experiments
 
 # use json in Python 2.7, fallback to simplejson for Python 2.5
 try:

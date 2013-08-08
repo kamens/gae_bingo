@@ -2,7 +2,9 @@ import urlparse
 
 from google.appengine.ext.webapp import RequestHandler
 
+from config import config
 import custom_exceptions
+import os
 from .gae_bingo import bingo, _iri_to_uri
 
 class Redirect(RequestHandler):
@@ -16,8 +18,10 @@ class Redirect(RequestHandler):
 
         # Check whether redirecting to an absolute or relative url
         netloc = urlparse.urlsplit(cont).netloc
-        if netloc:
-            # Disallow absolute urls to prevent arbitrary open redirects
+        if (netloc and
+                netloc != os.environ["HTTP_HOST"] and
+                not config.is_safe_hostname(netloc)):
+            # Disallow open redirects to other domains.
             raise custom_exceptions.InvalidRedirectURLError(
                     "Redirecting to an absolute url is not allowed.")
 

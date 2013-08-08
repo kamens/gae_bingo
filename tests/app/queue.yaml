@@ -1,0 +1,3 @@
+queue:
+- name: gae-bingo-queue
+  rate: 10/s

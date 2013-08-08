@@ -7,21 +7,46 @@ import re
 
 from google.appengine.ext import db
 
+from gae_bingo.config import config
 from gae_bingo import cookies
 from gae_bingo import request_cache
 from .models import GAEBingoIdentityModel
-from .config import current_logged_in_identity
 
 IDENTITY_COOKIE_KEY = "gae_b_id"
+IDENTITY_COOKIE_AGE = 365 * 24 * 60 * 60  # ~1 year in seconds
+
+CAN_CONTROL_CACHE_KEY = "CAN_CONTROL_CACHE"
 IDENTITY_CACHE_KEY = "IDENTITY_CACHE"
 LOGGED_IN_IDENTITY_CACHE_KEY = "LOGGED_IN_IDENTITY_CACHE"
 ID_TO_PUT_CACHE_KEY = "ID_TO_PUT"
 
+
+def can_control_experiments():
+    if request_cache.cache.get(CAN_CONTROL_CACHE_KEY) is None:
+        request_cache.cache[CAN_CONTROL_CACHE_KEY] = (
+                config.can_control_experiments())
+
+    return request_cache.cache[CAN_CONTROL_CACHE_KEY]
+
+
 def logged_in_bingo_identity():
     if request_cache.cache.get(LOGGED_IN_IDENTITY_CACHE_KEY) is None:
-        request_cache.cache[LOGGED_IN_IDENTITY_CACHE_KEY] = current_logged_in_identity()
+        request_cache.cache[LOGGED_IN_IDENTITY_CACHE_KEY] = config.current_logged_in_identity()
 
     return request_cache.cache[LOGGED_IN_IDENTITY_CACHE_KEY]
+
+
+def flush_caches():
+    """Flush the caches associated with the logged in identity.
+
+    This is useful if the logged in identity changed for some reason
+    mid-request.
+    """
+    request_cache.cache.pop(CAN_CONTROL_CACHE_KEY, None)
+    request_cache.cache.pop(IDENTITY_CACHE_KEY, None)
+    request_cache.cache.pop(LOGGED_IN_IDENTITY_CACHE_KEY, None)
+    request_cache.cache.pop(ID_TO_PUT_CACHE_KEY, None)
+
 
 def identity(identity_val=None):
     """ Determines the Bingo identity for the specified user. If no user
@@ -116,7 +141,7 @@ def put_id_if_necessary():
     """
     id_to_put = request_cache.cache.get(ID_TO_PUT_CACHE_KEY)
     if id_to_put:
-        val = current_logged_in_identity()
+        val = config.current_logged_in_identity()
         if val is None:
             return
         if isinstance(val, GAEBingoIdentityModel):
@@ -126,6 +151,13 @@ def put_id_if_necessary():
                         "but id_to_put is %s"
                         % (val.gae_bingo_identity, id_to_put))
             else:
+                # If the UserData has been updated in the course of this
+                # request current_logged_in_identity might read a stale version
+                # of the UserData from the request_cache.  In order to make
+                # sure we have the latest userData we will get the the userData
+                # again.  
+                val = db.get(val.key())
+
                 val.gae_bingo_identity = id_to_put
 
                 val.put()
@@ -135,7 +167,8 @@ def put_id_if_necessary():
                 db.get(val.key())
 
 def set_identity_cookie_header():
-    return cookies.set_cookie_value(IDENTITY_COOKIE_KEY, base64.urlsafe_b64encode(identity()))
+    return cookies.set_cookie_value(IDENTITY_COOKIE_KEY,
+            base64.urlsafe_b64encode(identity()), max_age=IDENTITY_COOKIE_AGE)
 
 def delete_identity_cookie_header():
     return cookies.set_cookie_value(IDENTITY_COOKIE_KEY, "")

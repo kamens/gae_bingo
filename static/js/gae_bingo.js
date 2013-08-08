@@ -90,7 +90,7 @@ var gae_bingo = (function() {
             "conversion_name" : stringify(conversion_name)
         };
 
-        jQuery.ajax({
+        return jQuery.ajax({
             type: "POST",
             url: path + "ab_test",
             data: testdata,
@@ -113,7 +113,7 @@ var gae_bingo = (function() {
         errorCallback = errorCallback || defaultError;
         successCallback = successCallback || defaultSuccess;
 
-        jQuery.ajax({
+        return jQuery.ajax({
             url: path + "bingo",
             type: "POST",
             data: {

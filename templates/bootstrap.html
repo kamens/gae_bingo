@@ -73,13 +73,14 @@
                 <div class="experiment-summary-content"></div>
 
                 <div class="bottom-controls">
-                    <a href="/gae_bingo/dashboard/export?canonical_name={{canonical_name}}">Export as CSV</a> | 
+                    <a href="/gae_bingo/dashboard/export?canonical_name={{canonical_name}}">Export as CSV</a> |
                     <a href="#" class="delete-experiment control-experiment"
                         data-canonical-name="{{canonical_name}}"  data-replace-with="Deleting experiment..."
-                        data-action="delete">Delete this experiment</a>
+                        data-action="delete">Delete this experiment</a> |
+                    <div class="btn refresh-conversion">Fetch new data for this conversion</div>
                 </div>
             </div>
-             
+
             {{/experiment_results}}
         </script>
 
@@ -140,20 +141,35 @@
             <table class="table table-striped">
                 <tbody>
                     <tr>
-                        <th width="33%">Alternative</th>
-                        <th width="33%">Participants</th>
-                        <th width="33%">Conversions</th>
+                        <th title="Control">C</th>
+                        <th width="20%">Alternative</th>
+                        <th width="20%"><a href="javascript: void 0" class="participants">Participants</a></th>
+                        <th width="20%"><a href="javascript: void 0" class="conversions">Conversions</a></th>
+                        <th width="20%">Relative conv. rate</th>
+                        <th width="20%"><a href="javascript: void 0" class="pval" title="The probability of obtaining a result this extreme by chance, assuming the null hypothesis is true.">p-value</a></th>
                         <th>&nbsp;</th>
                     </tr>
 
                     {{#alternatives}}
                     <tr>
-                        <td>{{pretty_content}}</td>
+                        <td>
+                            <input
+                                type="radio"
+                                class="set-control"
+                                title="Click to set this row as the control"
+                                name="set-control-{{experiment_name}}"
+                                value="{{number}}"
+                                {{#if control}}checked{{/if}}
+                                ></input>
+                        </td>
+                        <td>{{pretty_content}}{{#if control}} <span class="control-label">control</span>{{/if}}</td>
                         <td>{{participants}}</td>
                         <td>{{conversions}} ({{pretty_conversion_rate}})</td>
+                        <td style="{{relative_rate_style}}">{{relative_rate}}</td>
+                        <td>{{p_value}}</td>
                         <td>
-                            <button type="submit" class="btn btn-info btn-mini preview-alternative" 
-                                data-alternative-number="{{number}}" data-canonical-name="{{../canonical_name}}">Preview This</button>
+                            <button type="submit" class="btn btn-info btn-mini preview-alternative"
+                                data-alternative-number="{{number}}" data-hashable-name="{{../hashable_name}}">Preview This</button>
 
                             <span class="seeing-alternative" data-alternative-number="{{number}}">
                                 <strong><nobr>All users seeing this.</nobr></strong>
@@ -163,14 +179,17 @@
                     {{/alternatives}}
 
                     <tr>
+                        <td>&nbsp;</td>
                         <td class="title"><em>Total</em></td>
                         <td>{{total_participants}}</td>
                         <td>{{total_conversions}}</td>
                         <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
                     </tr>
 
                     <tr>
-                        <th colspan="4">
+                        <th colspan="7">
                             Significance Test Results: {{significance_test_results}}
                         </th>
                     </tr>
@@ -186,6 +205,7 @@
         <div class="navbar navbar-fixed-top">
             <div class="navbar-inner">
                 <div class="container">
+                    <img class="pull-right throbber" src="/gae_bingo/static/img/throbber.gif" style="display:none;">
                     <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
                         <span class="icon-bar"></span>
                         <span class="icon-bar"></span>
@@ -211,6 +231,7 @@
         </div>
 
         <script src="/gae_bingo/static/js/jquery.js"></script>
+        <script src="/gae_bingo/static/js/underscore-min.js"></script>
         <script src="/gae_bingo/static/js/bootstrap.min.js"></script>
         <script src="/gae_bingo/static/js/handlebars.js"></script>
         <script src="/gae_bingo/static/js/jQueryHandlebars.js"></script>

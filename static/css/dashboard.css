@@ -85,3 +85,19 @@
 .archived-notes .emo-active { display: none; }
 .archived-notes .active .emo-active { display: inline; }
 .archived-notes .active .emo-inactive { display: none; }
+
+.control-label {
+    color: #999;
+    font-size: 10px;
+    padding: 0 10px;
+    text-transform: uppercase;
+}
+
+.throbber {
+    position: relative;
+    top: 10px;
+}
+
+.experiment-conversions-content .table th a {
+    color:#333;
+}

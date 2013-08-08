@@ -1,13 +1,15 @@
 from __future__ import absolute_import
 
-from google.appengine.ext import webapp
 from google.appengine.ext.webapp.util import run_wsgi_app
+import webapp2
 from webapp2_extras.routes import RedirectRoute
 
-from gae_bingo import cache, dashboard, middleware, plots, blotter, api, redirect
+from gae_bingo import (cache, dashboard, middleware, plots, blotter,
+                       api, redirect, persist)
+from gae_bingo.config import config
 
-application = webapp.WSGIApplication([
-    ("/gae_bingo/persist", cache.PersistToDatastore),
+application = webapp2.WSGIApplication([
+    ("/gae_bingo/persist", persist.GuaranteePersistTask),
     ("/gae_bingo/log_snapshot", cache.LogSnapshotToDatastore),
     ("/gae_bingo/blotter/ab_test", blotter.AB_Test),
     ("/gae_bingo/blotter/bingo", blotter.Bingo),
@@ -28,10 +30,11 @@ application = webapp.WSGIApplication([
 
 ])
 application = middleware.GAEBingoWSGIMiddleware(application)
+application = config.wrap_wsgi_app(application)
+
 
 def main():
     run_wsgi_app(application)
 
 if __name__ == "__main__":
     main()
-

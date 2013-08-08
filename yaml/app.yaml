@@ -5,9 +5,9 @@ handlers:
   expiration: "300s"
 
 - url: /gae_bingo/tests/.*
-  script: gae_bingo/tests/main.py
+  script: gae_bingo/tests/app/main.py
 
-- url: /gae_bingo.*
+- url: /gae_bingo/.*
   script: gae_bingo/main.py
 
 

@@ -5,7 +5,7 @@ import StringIO
 import urllib
 
 from google.appengine.ext.webapp import RequestHandler
-from .config import can_control_experiments
+from .identity import can_control_experiments
 from .cache import BingoCache
 from .stats import describe_result_in_words
 
